@@ -323,7 +323,7 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 <div class="pg on" id="pg-search">
   <div class="mets" id="mets"></div>
   <div class="sw">
-    <input class="si" id="qi" type="text" placeholder="ค้นหา: ชื่อ, เลขมิเตอร์ PEA, ที่อยู่, MRU, ผู้ปฏิบัติงาน..." oninput="doSearch()">
+    <input class="si" id="qi" type="text" placeholder="ค้นหา: คำร้อง, ชื่อ, เลขมิเตอร์ PEA, ที่อยู่, MRU, ผู้ปฏิบัติงาน..." oninput="doSearch()">
     <select class="fs" id="ft" onchange="doSearch()">
       <option value="">ทุกประเภทงาน</option>
       <option>ติดตั้งใหม่</option><option>เพิ่มขนาด</option>
@@ -478,11 +478,22 @@ var APPS_URL = localStorage.getItem('pea_api_url') || 'https://script.google.com
 // 0=seq,1=date,2=worker,3=type,4=newPea,5=size,6=model,7=oldPea,8=zone,9=lat,10=lng,11=status,12=remark,13=name,14=addr,15=phone,16=mru
 
 const MONTH = {'ม.ค.':1,'ก.พ.':2,'มี.ค.':3,'เม.ย.':4,'พ.ค.':5,'มิ.ย.':6,'ก.ค.':7,'ส.ค.':8,'ก.ย.':9,'ต.ค.':10,'พ.ย.':11,'ธ.ค.':12};
+const MONTH_LABELS = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
 function g(r,i){return(r&&r[i]!=null)?String(r[i]).trim():'';}
 function parseDate(s){
-  try{const p=s.trim().split(' ');return{y:+p[2],m:MONTH[p[1]]||0,d:+p[0]};}
-  catch{return{y:0,m:0,d:0};}
+  try{
+    s=String(s||'').trim();
+    const p=s.split(' ');
+    if(MONTH[p[1]]) return {y:+p[2],m:MONTH[p[1]]||0,d:+p[0]};
+    const dt=new Date(s);
+    if(!isNaN(dt)) return {y:dt.getFullYear()%100,m:dt.getMonth()+1,d:dt.getDate()};
+  }catch(e){}
+  return{y:0,m:0,d:0};
+}
+function fmtDate(s){
+  const {y,m,d}=parseDate(s);
+  return d&&m ? String(d).padStart(2,'0')+' '+MONTH_LABELS[m]+' '+String(y).padStart(2,'0') : (s||'—');
 }
 function dateSortKey(s){const {y,m,d}=parseDate(s);return y*10000+m*100+d;}
 function bc(s){if(s.includes('ปิด'))return'bg';if(s.includes('รอ'))return'ba';if(s.includes('ค้าง'))return'br';return'bgr';}
@@ -504,13 +515,17 @@ function buildMets(el, data){
 let filtered=[], curPg=1, sortC=0, sortAsc=false;
 const PS=40;
 
+function searchKey(s){return String(s||'').toLowerCase().replace(/[^0-9a-zก-๙]/gi,'');}
+
 function doSearch(){
-  const q=document.getElementById('qi').value.toLowerCase();
+  const q=document.getElementById('qi').value.toLowerCase().trim();
+  const qk=searchKey(q);
+  const qAlt=qk.startsWith('hpty') ? qk.slice(4) : qk;
   const ft=document.getElementById('ft').value;
   const fst=document.getElementById('fst').value;
   const fz=document.getElementById('fz').value;
   filtered=RAW.filter(r=>{
-    if(q){const h=[g(r,13),g(r,14),g(r,4),g(r,7),g(r,2),g(r,16)].join(' ').toLowerCase();if(!h.includes(q))return false;}
+    if(q){const h=r.map(v=>String(v||'')).join(' ').toLowerCase(), hk=searchKey(h);if(!h.includes(q)&&!hk.includes(qk)&&!hk.includes(qAlt))return false;}
     if(ft&&!g(r,3).includes(ft))return false;
     if(fst&&!g(r,11).includes(fst))return false;
     if(fz&&g(r,8)!==fz)return false;
@@ -542,7 +557,7 @@ function renderTable(){
     const addrShort = addr.length>50 ? addr.slice(0,48)+'…' : addr;
     h+=`<tr onclick="openMo(${st+i})">
       <td class="mono" style="color:var(--t3)">${g(r,0)}</td>
-      <td class="mono">${g(r,1)||'—'}</td>
+      <td class="mono">${fmtDate(g(r,1))}</td>
       <td>${g(r,2)||'—'}</td>
       <td>${g(r,3)||'—'}</td>
       <td class="mono" style="color:var(--teal)">${g(r,4)||'—'}</td>
@@ -593,7 +608,7 @@ function openMo(idx){
     ${mru?`<div class="msec"><div class="msect">รหัส MRU</div><div class="mf"><div class="mfv mru">${mru}</div></div></div>`:''}
     <div class="msec"><div class="msect">ข้อมูลงาน</div>
       <div class="mgrid">
-        <div class="mf"><div class="mfl">วันที่จ่ายงาน</div><div class="mfv">${g(r,1)||'—'}</div></div>
+        <div class="mf"><div class="mfl">วันที่จ่ายงาน</div><div class="mfv">${fmtDate(g(r,1))}</div></div>
         <div class="mf"><div class="mfl">ผู้ปฏิบัติงาน</div><div class="mfv">${g(r,2)||'—'}</div></div>
         <div class="mf"><div class="mfl">ลำดับที่</div><div class="mfv mono">${g(r,0)||'—'}</div></div>
         <div class="mf"><div class="mfl">ขนาดมิเตอร์</div><div class="mfv">${g(r,5)||'—'}</div></div>
@@ -655,7 +670,7 @@ function renderPending(){
     const addrShort=addr.length>50?addr.slice(0,48)+'…':addr;
     h+=`<tr onclick="openPendMo(${i},${JSON.stringify(data.map((_,j)=>j)).replace(/"/g,'')})">
       <td class="mono" style="color:var(--t3)">${g(r,0)}</td>
-      <td class="mono">${g(r,1)||'—'}</td>
+      <td class="mono">${fmtDate(g(r,1))}</td>
       <td>${g(r,2)||'—'}</td>
       <td>${g(r,3)||'—'}</td>
       <td class="mono" style="color:var(--teal)">${g(r,4)||'—'}</td>
@@ -698,7 +713,7 @@ function initDaily(){
   sel.innerHTML='';
   ALL_DATES.forEach(d=>{
     const opt=document.createElement('option');
-    opt.value=d;opt.textContent=d+' ('+BY_DATE[d].length+' งาน)';
+    opt.value=d;opt.textContent=fmtDate(d)+' ('+BY_DATE[d].length+' งาน)';
     sel.appendChild(opt);
   });
   // restore previously selected date if still exists
@@ -851,13 +866,54 @@ async function syncData() {
     var j = await resp.json();
     if (!j.ok || !j.rows || !j.rows.length) throw new Error(j.error || 'ไม่มีข้อมูล');
     RAW = j.rows;
-    setSync('green', 'สด · ' + j.updated + ' · ' + j.total.toLocaleString() + ' รายการ');
+    const reqCount = await attachRequestNumbers(RAW);
+    setSync('green', 'สด · ' + j.updated + ' · ' + j.total.toLocaleString() + ' รายการ' + (reqCount ? ' · คำร้องพร้อมค้นหา' : ''));
   } catch(err) {
     setSync('amber', 'โหลดไม่ได้ · ใช้ snapshot (' + err.message + ')');
+    await attachRequestNumbers(RAW);
   }
   initAll();
 }
 
+const REQUEST_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1YF2naY16qJ7rKUKfjXkVpEm-lidjAAMMSUhdTekHZ68/gviz/tq';
+const REQUEST_SHEET_NAME = '⚡2569 / 2026';
+
+function sheetCell(c){return c ? String(c.f != null ? c.f : (c.v != null ? c.v : '')).trim() : '';}
+
+function loadRequestMap(){
+  return new Promise((resolve,reject)=>{
+    const cb='peaReqCb_'+Date.now()+'_'+Math.floor(Math.random()*10000);
+    const sc=document.createElement('script');
+    const done=()=>{delete window[cb];sc.remove();};
+    window[cb]=res=>{
+      try{
+        if(!res||res.status!=='ok'||!res.table)throw new Error('โหลดชีตคำร้องไม่ได้');
+        const map={};
+        (res.table.rows||[]).forEach(row=>{
+          const c=row.c||[];
+          const seq=sheetCell(c[0]);
+          const requestNo=sheetCell(c[3]);
+          if(seq&&requestNo)map[seq]=requestNo;
+        });
+        done();resolve(map);
+      }catch(e){done();reject(e);}
+    };
+    sc.onerror=()=>{done();reject(new Error('โหลดชีตคำร้องไม่ได้'));};
+    sc.src=REQUEST_SHEET_URL+'?tqx=out:json;responseHandler:'+cb+'&sheet='+encodeURIComponent(REQUEST_SHEET_NAME);
+    document.head.appendChild(sc);
+  });
+}
+
+async function attachRequestNumbers(rows){
+  try{
+    const reqMap=await loadRequestMap();
+    rows.forEach(r=>{const req=reqMap[g(r,0)];if(req)r[17]=req;});
+    return Object.keys(reqMap).length;
+  }catch(e){
+    console.warn('Request number sync skipped:', e.message);
+    return 0;
+  }
+}
 function setSync(color, label) {
   var dot = document.getElementById('syncDot');
   var lbl = document.getElementById('syncLbl');
@@ -970,7 +1026,7 @@ function filterMap(){
       <div class="mp-row"><span class="mp-label">มิเตอร์</span><span class="mp-val teal">${g(r,4)||'—'}</span></div>
       <div class="mp-row"><span class="mp-label">ประเภทงาน</span><span class="mp-val">${g(r,3)||'—'}</span></div>
       <div class="mp-row"><span class="mp-label">ผู้ปฏิบัติ</span><span class="mp-val">${g(r,2)||'—'}</span></div>
-      <div class="mp-row"><span class="mp-label">วันที่</span><span class="mp-val">${g(r,1)||'—'}</span></div>
+      <div class="mp-row"><span class="mp-label">วันที่</span><span class="mp-val">${fmtDate(g(r,1))}</span></div>
       ${addrShort?`<div class="mp-row"><span class="mp-label">ที่อยู่</span><span class="mp-val">${addrShort}</span></div>`:''}
       <a class="mp-gmap" href="https://maps.google.com/?q=${lat},${lng}" target="_blank">📍 เปิดใน Google Maps</a>
     </div>`;
