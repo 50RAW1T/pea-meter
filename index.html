@@ -288,6 +288,27 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 .zone-label { background:transparent!important; border:none!important; box-shadow:none!important; }
 .zone-label .leaflet-tooltip-content { background:transparent; }
 
+
+/* GUIDE PAGE */
+.guide-hero{
+  background:linear-gradient(135deg,rgba(74,158,255,.16),rgba(167,139,250,.10));
+  border:1px solid var(--b2);
+  border-radius:16px;
+  padding:22px;
+  margin-bottom:14px;
+}
+.guide-kicker{font-size:11px;color:var(--blue);font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;margin-bottom:6px}
+.guide-title{font-size:24px;font-weight:600;margin-bottom:6px}
+.guide-desc{font-size:13px;color:var(--t2);line-height:1.8;max-width:780px}
+.guide-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:14px}
+.guide-card{background:var(--bg2);border:1px solid var(--b);border-radius:var(--r);padding:16px}
+.guide-card h3{font-size:14px;margin-bottom:8px}
+.guide-card p,.guide-card li{font-size:12px;color:var(--t2);line-height:1.8}
+.guide-card ul{padding-left:18px}
+.guide-pill-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.guide-pill{font-size:11px;color:var(--blue);background:var(--bluebg);border:1px solid rgba(74,158,255,.25);padding:5px 9px;border-radius:99px}
+.guide-note{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.22);color:var(--amber);border-radius:var(--r);padding:13px 15px;font-size:12px;line-height:1.8}
+
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
@@ -310,6 +331,7 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 
 <div class="nav">
   <button class="tab on" onclick="showPg('search',this)">🔍 ค้นหางาน</button>
+  <button class="tab" onclick="showPg('guide',this)">📘 คู่มือ</button>
   <button class="tab" onclick="showPg('pending',this)">⏳ งานค้าง</button>
   <button class="tab" onclick="showPg('daily',this)">📅 สรุปรายวัน</button>
   <button class="tab" onclick="showPg('map',this);initMap()">🗺️ แผนที่</button>
@@ -318,6 +340,93 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 </div>
 
 <div class="main">
+
+
+<!-- ══ GUIDE PAGE ══ -->
+<div class="pg" id="pg-guide">
+  <div class="guide-hero">
+    <div class="guide-kicker">PEA METER GUIDE</div>
+    <div class="guide-title">คู่มือการดูข้อมูลงานจ่ายมิเตอร์</div>
+    <div class="guide-desc">
+      เว็บนี้ใช้สำหรับดูข้อมูลงานจ่ายมิเตอร์ของพื้นที่บางละมุง ช่วยให้พนักงานติดตามงานได้ง่ายขึ้น
+      และช่วยให้ผู้ใช้ไฟเข้าใจสถานะ ประเภทงาน และขั้นตอนที่เกี่ยวข้องกับงานมิเตอร์
+    </div>
+  </div>
+
+  <div class="guide-grid">
+    <div class="guide-card">
+      <h3>👤 สำหรับผู้ใช้ไฟ</h3>
+      <ul>
+        <li>ค้นหางานจากเลขคำร้อง ชื่อ ที่อยู่ หรือเลขมิเตอร์</li>
+        <li>ดูสถานะว่างานรอดำเนินการหรือปิดงานแล้ว</li>
+        <li>ทำความเข้าใจประเภทงาน เช่น ติดตั้งใหม่ เพิ่มขนาด TOU</li>
+        <li>ดูตำแหน่งงานโดยรวมผ่านหน้าแผนที่</li>
+      </ul>
+    </div>
+
+    <div class="guide-card">
+      <h3>👷 สำหรับพนักงาน</h3>
+      <ul>
+        <li>ตรวจสอบรายการงานค้าง</li>
+        <li>ดูสรุปงานรายวันหรือรายสัปดาห์</li>
+        <li>กรองงานตามผู้ปฏิบัติงาน ประเภทงาน และ Zone</li>
+        <li>ใช้แผนที่ช่วยวางแผนพื้นที่ปฏิบัติงาน</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="guide-grid">
+    <div class="guide-card">
+      <h3>🔎 ค้นหาได้จากอะไรบ้าง</h3>
+      <p>สามารถค้นหาข้อมูลงานได้จากคำสำคัญหลายแบบ</p>
+      <div class="guide-pill-row">
+        <span class="guide-pill">เลขคำร้อง</span>
+        <span class="guide-pill">ชื่อผู้ใช้ไฟ</span>
+        <span class="guide-pill">เลขมิเตอร์ PEA</span>
+        <span class="guide-pill">ที่อยู่</span>
+        <span class="guide-pill">MRU</span>
+        <span class="guide-pill">ผู้ปฏิบัติงาน</span>
+      </div>
+    </div>
+
+    <div class="guide-card">
+      <h3>🏷️ ประเภทงานที่พบในระบบ</h3>
+      <ul>
+        <li><b>ติดตั้งใหม่</b> งานขอใช้ไฟและติดตั้งมิเตอร์ครั้งแรก</li>
+        <li><b>เพิ่มขนาด</b> งานเปลี่ยนขนาดมิเตอร์ให้รองรับการใช้ไฟมากขึ้น</li>
+        <li><b>เปลี่ยนประเภท</b> งานเปลี่ยนประเภทการใช้ไฟตามลักษณะการใช้งาน</li>
+        <li><b>TOU</b> งานมิเตอร์อัตราตามช่วงเวลาการใช้ไฟ</li>
+        <li><b>ต่อกลับ</b> งานต่อไฟกลับหลังจากถูกงดจ่ายหรือถอดมิเตอร์</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="guide-grid">
+    <div class="guide-card">
+      <h3>📌 ความหมายสถานะงาน</h3>
+      <ul>
+        <li><b>รอดำเนินการ</b> งานที่ยังอยู่ระหว่างตรวจสอบ รอติดตั้ง หรือรอบันทึกผล</li>
+        <li><b>ปิดงาน</b> งานที่ดำเนินการเสร็จและบันทึกผลเรียบร้อยแล้ว</li>
+      </ul>
+    </div>
+
+    <div class="guide-card">
+      <h3>🧭 เมนูหลักในระบบ</h3>
+      <ul>
+        <li><b>ค้นหางาน</b> ค้นหาและดูรายละเอียดงานแต่ละรายการ</li>
+        <li><b>งานค้าง</b> ดูงานที่ยังรอดำเนินการ</li>
+        <li><b>สรุปรายวัน</b> ดูภาพรวมงานตามวันที่</li>
+        <li><b>แผนที่</b> ดูตำแหน่งงานตามพื้นที่</li>
+        <li><b>Dashboard</b> ดูภาพรวมจำนวนงาน</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="guide-note">
+    หมายเหตุ: หน้านี้เป็นคู่มือการใช้งานและคำอธิบายระบบเท่านั้น ไม่ได้แก้ไขข้อมูลใน Google Sheet
+    ข้อมูลจริงยังมาจากแหล่งข้อมูลที่ตั้งค่าไว้ในระบบเดิม
+  </div>
+</div>
 
 <!-- ══ SEARCH PAGE ══ -->
 <div class="pg on" id="pg-search">
