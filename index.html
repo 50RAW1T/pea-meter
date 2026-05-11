@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8">
@@ -66,6 +66,13 @@ th.on .si2{opacity:1;color:var(--blue)}
 tbody tr{border-bottom:1px solid var(--b);cursor:pointer;transition:background .1s}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:var(--bg3)}
+tbody tr.print-selected{background:rgba(167,139,250,.18)!important;box-shadow:inset 3px 0 0 var(--purple)}
+tbody tr.print-selected:hover{background:rgba(167,139,250,.26)!important}
+tbody tr.print-selected td:first-child{color:var(--purple)!important}
+.print-col{width:44px;text-align:center}
+.queue-row-btn{width:26px;height:26px;border-radius:50%;border:1px solid var(--b2);background:transparent;color:var(--t3);cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
+.queue-row-btn:hover{background:var(--bg3);color:var(--t)}
+.queue-row-btn.on{background:rgba(167,139,250,.22);border-color:var(--purple);color:var(--purple)}
 td{padding:9px 12px;font-size:12px;vertical-align:top}
 .mono{font-family:'IBM Plex Mono',monospace;font-size:11px}
 
@@ -224,6 +231,10 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 }
 .print-mru-label { font-size: 7.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #92400e; white-space: nowrap; }
 .print-mru-val { font-size: 12px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: #b45309; }
+.print-mru-item { flex: 1; min-width: 0; }
+.print-mru-item + .print-mru-item { border-left: 1px solid #fcd34d; padding-left: 6px; }
+.print-mru-item .print-mru-label { margin-bottom: 1px; }
+.print-mru-item.req .print-mru-val { color: #0f766e; }
 .print-sec { margin-bottom: 5px; }
 .print-sec-title { font-size: 7.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #6b7280; border-bottom: 1px solid #e5e7eb; padding-bottom: 1px; margin-bottom: 4px; }
 .print-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
@@ -249,6 +260,15 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
   cursor: pointer; font-weight: 500; transition: background .15s;
 }
 .print-btn:hover { background: rgba(74,158,255,0.18); }
+.copy-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 11px; margin-top: 10px;
+  background: rgba(45,212,191,0.08); border: 1px solid rgba(45,212,191,0.4);
+  border-radius: var(--r); color: var(--teal);
+  font-size: 13px; font-family: 'IBM Plex Sans Thai', sans-serif;
+  cursor: pointer; font-weight: 500; transition: background .15s;
+}
+.copy-btn:hover { background: rgba(45,212,191,0.16); }
 .select-print-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 10px; margin-top: 6px;
@@ -264,15 +284,32 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 .print-queue-bar {
   display: none;
   position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-  background: var(--bg2); border: 1px solid var(--border2);
-  border-radius: 99px; padding: 10px 20px;
-  display: flex; align-items: center; gap: 12px;
+  background: var(--bg2); border: 1px solid var(--b2);
+  border-radius: 18px; padding: 10px 14px;
+  align-items: center; gap: 10px; flex-wrap: wrap;
+  max-width: min(760px, calc(100vw - 24px));
   box-shadow: 0 4px 24px rgba(0,0,0,0.4);
   z-index: 300; font-size: 13px;
 }
 .pq-count { color: var(--blue); font-weight: 600; }
 .pq-label { color: var(--t2); }
-.pq-print {
+.pq-list {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  max-width: 420px;
+}
+.pq-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  max-width: 190px; padding: 4px 8px;
+  background: var(--bg3); border: 1px solid var(--b2);
+  border-radius: 99px; color: var(--t);
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pq-chip b { color: var(--teal); font-weight: 500; }
+@media(max-width:640px){
+  .print-queue-bar { left: 12px; right: 12px; transform: none; justify-content: center; }
+  .pq-list { width: 100%; justify-content: center; max-width: none; }
+}.pq-print {
   background: var(--blue); color: #fff; border: none;
   padding: 7px 16px; border-radius: 99px; font-size: 13px;
   font-family: 'IBM Plex Sans Thai', sans-serif; cursor: pointer; font-weight: 500;
@@ -335,6 +372,19 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 .chart-fill{height:100%;background:var(--blue);border-radius:99px}
 .chart-value{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--t2);text-align:right}
 
+
+/* SAFE SUMMARY ADDON - no popup/search override */
+#monthPick,#dayPick{
+  min-width:180px;height:42px;background:var(--bg2);border:1px solid var(--b2);
+  border-radius:var(--rs);padding:8px 12px;color:var(--t);font-size:13px;
+  font-family:'IBM Plex Sans Thai',sans-serif;outline:none;cursor:pointer
+}
+#monthPick option,#dayPick option{background:#161b27;color:#e8eaf0}
+.summary-section-title{font-size:14px;font-weight:600;margin:18px 0 10px;color:var(--t)}
+.summary-alert{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.22);border-radius:var(--r);padding:12px 14px;color:var(--amber);font-size:12px;line-height:1.7;margin-bottom:12px}
+.summary-job-table tbody tr{cursor:pointer}
+@media(max-width:640px){#monthPick,#dayPick{width:100%;min-width:100%}}
+
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
@@ -344,6 +394,7 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 <div class="print-queue-bar" id="pqBar">
   <span class="pq-count" id="pqCount">0</span>
   <span class="pq-label">งานที่เลือก</span>
+  <div class="pq-list" id="pqList"></div>
   <button class="pq-print" onclick="printQueue()">🖨️ พิมพ์ทั้งหมด</button>
   <button class="pq-clear" onclick="clearQueue()">✕ ล้าง</button>
 </div>
@@ -359,9 +410,8 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
   <button class="tab on" onclick="showPg('search',this)">🔍 ค้นหางาน</button>
   <button class="tab" onclick="showPg('guide',this)">📘 คู่มือ</button>
   <button class="tab" onclick="showPg('pending',this)">⏳ งานค้าง</button>
-  <button class="tab" onclick="showPg('daily',this)">📅 สรุปรายวัน</button>
+  <button class="tab" onclick="showPg('daily',this)">📊 สรุป</button>
   <button class="tab" onclick="showPg('map',this);initMap()">🗺️ แผนที่</button>
-  <button class="tab" onclick="showPg('dash',this)">📊 Dashboard</button>
   <button class="tab" id="settingsTab" onclick="askPassword(this)" style="color:var(--t3)">⚙️</button>
 </div>
 
@@ -504,6 +554,14 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
       <option value="">ทุก Zone</option>
       <option value="1">Zone 1</option><option value="2">Zone 2</option>
     </select>
+    <select class="fs" id="ff" onchange="doSearch()">
+      <option value="">ตัวกรองงาน</option>
+      <option value="noCoord">ไม่มีพิกัด</option>
+      <option value="hasRemark">มีหมายเหตุ</option>
+      <option value="hasReq">มีเลขคำร้อง</option>
+      <option value="noReq">ไม่มีเลขคำร้อง</option>
+      <option value="debt">ค้างจ่าย</option>
+    </select>
   </div>
   <div class="ri" id="ri"></div>
   <div class="tw" id="tw"></div>
@@ -529,15 +587,31 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 
 <!-- ══ DAILY PAGE ══ -->
 <div class="pg" id="pg-daily">
-  <div class="day-picker">
-    <label>เลือกวันที่:</label>
-    <select id="dayPick" onchange="renderDaily()"></select>
-    <div class="week-toggle">
-      <button class="wt on" id="wt-day" onclick="setView('day',this)">รายวัน</button>
-      <button class="wt" id="wt-week" onclick="setView('week',this)">สัปดาห์</button>
+  <div class="help-box">
+    <div class="help-title">📊 สรุปงานจ่ายมิเตอร์</div>
+    <div class="help-desc">รวมสรุปรายวันและรายเดือนไว้หน้าเดียว เพื่อดูภาพรวมงาน ปิดงาน งานค้าง ประเภทงาน Zone และผู้ปฏิบัติงาน โดยยังใช้ข้อมูลชุดเดียวกับหน้าค้นหางาน</div>
+  </div>
+
+  <div class="guide-grid">
+    <div class="guide-card">
+      <h3>📅 สรุปรายวัน</h3>
+      <div class="day-picker" style="margin-bottom:0">
+        <label>เลือกวันที่:</label>
+        <select id="dayPick" onchange="renderSummaryDaily()"></select>
+      </div>
+    </div>
+
+    <div class="guide-card">
+      <h3>📆 สรุปรายเดือน</h3>
+      <div class="day-picker" style="margin-bottom:0">
+        <label>เลือกเดือน:</label>
+        <select id="monthPick" onchange="renderSummaryMonthly()"></select>
+      </div>
     </div>
   </div>
-  <div id="dailyContent"></div>
+
+  <div id="summaryMonthly"></div>
+  <div id="summaryDaily"></div>
 </div>
 
 <!-- ══ DASHBOARD PAGE ══ -->
@@ -661,6 +735,13 @@ function fmtDate(s){
   const {y,m,d}=parseDate(s);
   return d&&m ? String(d).padStart(2,'0')+' '+MONTH_LABELS[m]+' '+String(y).padStart(2,'0') : (s||'—');
 }
+function fmtPrintNow(){
+  const n=new Date();
+  const y=String((n.getFullYear()+543)%100).padStart(2,'0');
+  const d=String(n.getDate()).padStart(2,'0');
+  const t=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  return d+' '+MONTH_LABELS[n.getMonth()+1]+' '+y+' '+t;
+}
 function dateSortKey(s){const {y,m,d}=parseDate(s);return y*10000+m*100+d;}
 function bc(s){if(s.includes('ปิด'))return'bg';if(s.includes('รอ'))return'ba';if(s.includes('ค้าง'))return'br';return'bgr';}
 function bl(s){if(s.includes('ปิด'))return'ปิดงาน';if(s.includes('รอ'))return'รอดำเนินการ';if(s.includes('ค้าง'))return'ค้างจ่าย';return s||'ไม่ระบุ';}
@@ -680,8 +761,21 @@ function buildMets(el, data){
 // ── SEARCH ──
 let filtered=[], curPg=1, sortC=0, sortAsc=false;
 const PS=40;
+function isQueued(r){return Array.isArray(window.printSelectedRows)&&printSelectedRows.some(x=>g(x,0)===g(r,0));}
+function queueCell(r){const on=isQueued(r);return `<td class="print-col"><button class="queue-row-btn ${on?'on':''}" onclick="toggleQueueRow('${g(r,0)}',event)" title="${on?'เอาออกจากคิวพิมพ์':'เลือกพิมพ์'}">${on?'✓':'＋'}</button></td>`;}
 
 function searchKey(s){return String(s||'').toLowerCase().replace(/[^0-9a-zก-๙]/gi,'');}
+function rowHasCoord(r){const lat=g(r,9),lng=g(r,10);return !!(lat&&lng&&lat!=='0'&&lng!=='0'&&lat!=='ไม่มีพิกัด'&&lng!=='ไม่มีพิกัด');}
+function passFieldFilter(r,f){
+  if(!f)return true;
+  const remark=g(r,12), req=g(r,17), status=g(r,11);
+  if(f==='noCoord')return !rowHasCoord(r);
+  if(f==='hasRemark')return !!remark;
+  if(f==='hasReq')return !!req;
+  if(f==='noReq')return !req;
+  if(f==='debt')return (remark+status).includes('ค้างจ่าย') || (remark+status).includes('ค้าง');
+  return true;
+}
 
 function doSearch(){
   const q=document.getElementById('qi').value.toLowerCase().trim();
@@ -690,11 +784,13 @@ function doSearch(){
   const ft=document.getElementById('ft').value;
   const fst=document.getElementById('fst').value;
   const fz=document.getElementById('fz').value;
+  const ff=document.getElementById('ff')?.value || '';
   filtered=RAW.filter(r=>{
     if(q){const h=r.map(v=>String(v||'')).join(' ').toLowerCase(), hk=searchKey(h);if(!h.includes(q)&&!hk.includes(qk)&&!hk.includes(qAlt))return false;}
     if(ft&&!g(r,3).includes(ft))return false;
     if(fst&&!g(r,11).includes(fst))return false;
     if(fz&&g(r,8)!==fz)return false;
+    if(!passFieldFilter(r,ff))return false;
     return true;
   });
   filtered.sort((a,b)=>{
@@ -712,7 +808,7 @@ const HEADS=[['#',0],['วันที่',1],['ผู้ปฏิบัติ',
 function renderTable(){
   if(!filtered.length){document.getElementById('tw').innerHTML='<div class="empty">ไม่พบรายการที่ตรงกับเงื่อนไข</div>';return;}
   const st=(curPg-1)*PS, pageRows=filtered.slice(st,st+PS), tp=Math.ceil(filtered.length/PS);
-  let h=`<table><thead><tr>`;
+  let h=`<table><thead><tr><th class="print-col">พิมพ์</th>`;
   HEADS.forEach(([lbl,ci])=>{
     const s=sortC===ci;
     h+=`<th class="${s?'on':''}" onclick="setSort(${ci})">${lbl}<span class="si2">${s?(sortAsc?'↑':'↓'):'↕'}</span></th>`;
@@ -721,7 +817,8 @@ function renderTable(){
   pageRows.forEach((r,i)=>{
     const s=g(r,11), name=g(r,13)||'ไม่ระบุ', addr=g(r,14);
     const addrShort = addr.length>50 ? addr.slice(0,48)+'…' : addr;
-    h+=`<tr onclick="openMo(${st+i})">
+    h+=`<tr data-seq="${g(r,0)}" class="${isQueued(r)?'print-selected':''}" onclick="openMo(${st+i})">
+      ${queueCell(r)}
       <td class="mono" style="color:var(--t3)">${g(r,0)}</td>
       <td class="mono">${fmtDate(g(r,1))}</td>
       <td>${g(r,2)||'—'}</td>
@@ -754,13 +851,46 @@ function buildPgn(c,t){
 function goPg(p){curPg=p;renderTable();window.scrollTo(0,120);}
 function setSort(c){if(sortC===c)sortAsc=!sortAsc;else{sortC=c;sortAsc=true;}doSearch();}
 
+function buildJobText(r){
+  const lat=g(r,9),lng=g(r,10), gps=rowHasCoord(r)?lat+', '+lng:'-';
+  const lines=[
+    'ใบงาน PEA บางละมุง',
+    'ลำดับ: '+(g(r,0)||'-'),
+    'เลขที่คำร้อง: '+(g(r,17)||'-'),
+    'วันที่จ่ายงาน: '+fmtDate(g(r,1)),
+    'ผู้ปฏิบัติงาน: '+(g(r,2)||'-'),
+    'ประเภทงาน: '+(g(r,3)||'-'),
+    'ชื่อ: '+(g(r,13)||'-'),
+    'มิเตอร์ใหม่: '+(g(r,4)||'-'),
+    'MRU: '+(g(r,16)||'-'),
+    'ขนาด: '+(g(r,5)||'-'),
+    'ที่อยู่: '+(g(r,14)||'-'),
+    'โทร: '+(g(r,15)||'-'),
+    'GPS: '+gps,
+    'สถานะ: '+(g(r,11)||'-')
+  ];
+  if(g(r,12))lines.push('หมายเหตุ: '+g(r,12));
+  if(rowHasCoord(r))lines.push('Maps: https://maps.google.com/?q='+lat+','+lng);
+  return lines.join('\n');
+}
+
+function copyJobText(){
+  if(!_printRow)return;
+  const txt=buildJobText(_printRow);
+  const done=()=>{const b=document.getElementById('copyJobBtn');if(b){b.textContent='✓ คัดลอกแล้ว';setTimeout(()=>b.textContent='📋 คัดลอกข้อมูลงาน',1400);}};
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(txt).then(done).catch(()=>fallbackCopy(txt,done));}
+  else fallbackCopy(txt,done);
+}
+function fallbackCopy(txt,done){
+  const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();
+}
 // ── MODAL ──
 function openMo(idx){
   const r=filtered[idx];if(!r)return;
   const s=g(r,11),name=g(r,13)||'(ไม่มีชื่อ)';
   const lat=g(r,9),lng=g(r,10);
   const hasGps=lat&&lng&&lat!='0'&&lng!='0';
-  const mru=g(r,16),rmk=g(r,12);
+  const mru=g(r,16),requestNo=g(r,17),rmk=g(r,12);
   document.getElementById('mbox').innerHTML=`
     <div class="mh">
       <div class="mt">${name}</div>
@@ -771,7 +901,7 @@ function openMo(idx){
       ${g(r,8)?`<span class="badge bgr">Zone ${g(r,8)}</span>`:''}
       ${g(r,3)?`<span class="badge bgr">${g(r,3)}</span>`:''}
     </div>
-    ${mru?`<div class="msec"><div class="msect">รหัส MRU</div><div class="mf"><div class="mfv mru">${mru}</div></div></div>`:''}
+    ${(requestNo||mru)?`<div class="msec"><div class="msect">คำร้อง / MRU</div><div class="mgrid"><div class="mf"><div class="mfl">เลขที่คำร้อง</div><div class="mfv mono" style="font-size:14px;color:var(--teal)">${requestNo||'—'}</div></div><div class="mf"><div class="mfl">รหัส MRU</div><div class="mfv mru">${mru||'—'}</div></div></div></div>`:''}
     <div class="msec"><div class="msect">ข้อมูลงาน</div>
       <div class="mgrid">
         <div class="mf"><div class="mfl">วันที่จ่ายงาน</div><div class="mfv">${fmtDate(g(r,1))}</div></div>
@@ -799,6 +929,7 @@ function openMo(idx){
     ${rmk?`<div class="msec" style="margin-top:10px"><div class="msect">หมายเหตุ</div><div class="mf"><div class="mfv">${rmk}</div></div></div>`:''}
   `;
   _printRow = r;
+  document.getElementById('mbox').innerHTML += '<button class="copy-btn" id="copyJobBtn" onclick="copyJobText()">📋 คัดลอกข้อมูลงาน</button>';
   document.getElementById('mbox').innerHTML += '<button class="print-btn" onclick="doPrint()">🖨️ พิมพ์ใบงานนี้</button>';
   var inQueue = printSelectedRows.some(function(x){ return x[0]===r[0]; });
   document.getElementById('mbox').innerHTML += '<button class="select-print-btn' + (inQueue?' selected':'') + '" id="queueToggleBtn" onclick="toggleQueue()">☑️ ' + (inQueue?'ถูกเลือกแล้ว ('+printSelectedRows.length+'/4)':'เลือกพิมพ์พร้อมกัน') + '</button>';
@@ -829,12 +960,13 @@ function renderPending(){
 
   if(!data.length){document.getElementById('ptw').innerHTML='<div class="empty">ไม่พบรายการค้าง</div>';return;}
   let h=`<table><thead><tr>
-    <th>#</th><th>วันที่</th><th>ผู้ปฏิบัติ</th><th>ประเภทงาน</th><th>มิเตอร์ใหม่ (PEA)</th><th>ขนาด</th><th>Zone</th><th>ชื่อ / ที่อยู่</th><th>สถานะ</th>
+    <th class="print-col">พิมพ์</th><th>#</th><th>วันที่</th><th>ผู้ปฏิบัติ</th><th>ประเภทงาน</th><th>มิเตอร์ใหม่ (PEA)</th><th>ขนาด</th><th>Zone</th><th>ชื่อ / ที่อยู่</th><th>สถานะ</th>
   </tr></thead><tbody>`;
   data.forEach((r,i)=>{
     const s=g(r,11), name=g(r,13)||'ไม่ระบุ', addr=g(r,14);
     const addrShort=addr.length>50?addr.slice(0,48)+'…':addr;
-    h+=`<tr onclick="openPendMo(${i},${JSON.stringify(data.map((_,j)=>j)).replace(/"/g,'')})">
+    h+=`<tr data-seq="${g(r,0)}" class="${isQueued(r)?'print-selected':''}" onclick="openPendMo(${i},${JSON.stringify(data.map((_,j)=>j)).replace(/"/g,'')})">
+      ${queueCell(r)}
       <td class="mono" style="color:var(--t3)">${g(r,0)}</td>
       <td class="mono">${fmtDate(g(r,1))}</td>
       <td>${g(r,2)||'—'}</td>
@@ -951,11 +1083,12 @@ function renderDaily(){
 
   // Table of all jobs that day
   h+=`<div class="tw"><table><thead><tr>
-    <th>#</th><th>ผู้ปฏิบัติ</th><th>ประเภทงาน</th><th>มิเตอร์ใหม่ (PEA)</th><th>ขนาด</th><th>ชื่อ / ที่อยู่</th><th>สถานะ</th>
+    <th class="print-col">พิมพ์</th><th>#</th><th>ผู้ปฏิบัติ</th><th>ประเภทงาน</th><th>มิเตอร์ใหม่ (PEA)</th><th>ขนาด</th><th>ชื่อ / ที่อยู่</th><th>สถานะ</th>
   </tr></thead><tbody>`;
   data.forEach((r,i)=>{
     const s=g(r,11), name=g(r,13)||'ไม่ระบุ', addr=g(r,14);
-    h+=`<tr onclick="openDailyMo(${i})">
+    h+=`<tr data-seq="${g(r,0)}" class="${isQueued(r)?'print-selected':''}" onclick="openDailyMo(${i})">
+      ${queueCell(r)}
       <td class="mono" style="color:var(--t3)">${g(r,0)}</td>
       <td>${g(r,2)||'—'}</td>
       <td>${g(r,3)||'—'}</td>
@@ -1127,9 +1260,148 @@ function renderSearchInsights(){
 }
 
 renderSearchInsights();
+
+/* SAFE SUMMARY ADDON - does not override openMo/doSearch/renderTable */
+(function(){
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function dateParts(s){
+    s=String(s||'').trim();
+    var m=s.match(/(\d{1,2})\s*([ก-ฮ.]+)\s*(\d{2,4})/);
+    if(m){
+      var map={'ม.ค.':'01','ก.พ.':'02','มี.ค.':'03','เม.ย.':'04','พ.ค.':'05','มิ.ย.':'06','ก.ค.':'07','ส.ค.':'08','ก.ย.':'09','ต.ค.':'10','พ.ย.':'11','ธ.ค.':'12'};
+      var yy=m[3].length===2?'20'+m[3]:m[3], mm=map[m[2]]||'', dd=String(m[1]).padStart(2,'0');
+      if(mm) return {date:yy+'-'+mm+'-'+dd, month:yy+'-'+mm, label:dd+' '+m[2]+' '+String(yy).slice(-2)};
+    }
+    var d=new Date(s);
+    if(!isNaN(d.getTime())){
+      var names=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+      var yy2=d.getFullYear(), mm2=String(d.getMonth()+1).padStart(2,'0'), dd2=String(d.getDate()).padStart(2,'0');
+      return {date:yy2+'-'+mm2+'-'+dd2, month:yy2+'-'+mm2, label:dd2+' '+names[d.getMonth()]+' '+String(yy2).slice(-2)};
+    }
+    return null;
+  }
+  function monthLabel(k){
+    var names={'01':'ม.ค.','02':'ก.พ.','03':'มี.ค.','04':'เม.ย.','05':'พ.ค.','06':'มิ.ย.','07':'ก.ค.','08':'ส.ค.','09':'ก.ย.','10':'ต.ค.','11':'พ.ย.','12':'ธ.ค.'};
+    var p=String(k||'').split('-');
+    return p.length===2 ? (names[p[1]]||p[1])+' '+p[0].slice(-2) : '-';
+  }
+  function isClosed(r){return String((r||[])[11]||'').indexOf('ปิด')>=0;}
+  function hasCoord(r){
+    var lat=String((r||[])[9]||'').trim(), lng=String((r||[])[10]||'').trim();
+    return !!(lat&&lng&&lat!=='ไม่มีพิกัด'&&lng!=='ไม่มีพิกัด'&&!isNaN(parseFloat(lat))&&!isNaN(parseFloat(lng)));
+  }
+  function countBy(rows,idx){
+    var o={}; (rows||[]).forEach(function(r){var k=String(r[idx]||'ไม่ระบุ').trim()||'ไม่ระบุ';o[k]=(o[k]||0)+1;}); return o;
+  }
+  function top(obj,n){
+    return Object.keys(obj||{}).map(function(k){return [k,obj[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,n||8);
+  }
+  function bars(title,obj){
+    var items=top(obj,8), max=items.length?items[0][1]:1;
+    var rows=items.map(function(it){
+      return '<div class="chart-row"><div class="chart-label">'+esc(it[0])+'</div><div class="chart-track"><div class="chart-fill" style="width:'+Math.max(4,Math.round(it[1]/max*100))+'%"></div></div><div class="chart-value">'+it[1]+'</div></div>';
+    }).join('');
+    return '<div class="mini-chart"><h3>'+esc(title)+'</h3>'+(rows||'<div class="empty">ไม่มีข้อมูล</div>')+'</div>';
+  }
+  function summaryHtml(rows,title){
+    rows=rows||[];
+    var total=rows.length, closed=rows.filter(isClosed).length, pending=total-closed, noCoord=rows.filter(function(r){return !hasCoord(r);}).length;
+    var byType=countBy(rows,3), byZone=countBy(rows,8), byWorker=countBy(rows,2);
+    var topType=top(byType,1)[0]||['-',0], topWorker=top(byWorker,1)[0]||['-',0];
+    return '<div class="summary-section-title">'+title+'</div>'+
+      '<div class="quick-summary">'+
+      '<div class="qs-card"><div class="qs-label">งานทั้งหมด</div><div class="qs-value">'+total.toLocaleString()+'</div><div class="qs-note">รายการ</div></div>'+
+      '<div class="qs-card g"><div class="qs-label">ปิดงาน</div><div class="qs-value">'+closed.toLocaleString()+'</div><div class="qs-note">'+(total?Math.round(closed/total*100):0)+'%</div></div>'+
+      '<div class="qs-card a"><div class="qs-label">รอดำเนินการ</div><div class="qs-value">'+pending.toLocaleString()+'</div><div class="qs-note">ยังไม่ปิด</div></div>'+
+      '<div class="qs-card r"><div class="qs-label">ไม่มีพิกัด</div><div class="qs-value">'+noCoord.toLocaleString()+'</div><div class="qs-note">ไม่ขึ้นแผนที่</div></div>'+
+      '<div class="qs-card p"><div class="qs-label">ประเภทสูงสุด</div><div class="qs-value" style="font-size:18px">'+esc(topType[0])+'</div><div class="qs-note">'+topType[1].toLocaleString()+' รายการ</div></div>'+
+      '<div class="qs-card"><div class="qs-label">ผู้ปฏิบัติงานสูงสุด</div><div class="qs-value" style="font-size:18px">'+esc(topWorker[0])+'</div><div class="qs-note">'+topWorker[1].toLocaleString()+' รายการ</div></div>'+
+      '</div><div class="chart-grid">'+bars('ประเภทงาน',byType)+bars('Zone',byZone)+bars('ผู้ปฏิบัติงาน',byWorker)+'</div>';
+  }
+  function initPickers(){
+    var dayEl=document.getElementById('dayPick'), monthEl=document.getElementById('monthPick');
+    if(!dayEl&&!monthEl) return;
+    var days={}, months={};
+    (window.RAW||[]).forEach(function(r){
+      var p=dateParts(r[1]);
+      if(p){ if(!days[p.date]) days[p.date]={label:p.label,count:0}; days[p.date].count++; months[p.month]=true; }
+    });
+    var dayKeys=Object.keys(days).sort(), monthKeys=Object.keys(months).sort();
+    if(dayEl){
+      var old=dayEl.value;
+      dayEl.innerHTML=dayKeys.map(function(k){return '<option value="'+k+'">'+days[k].label+' ('+days[k].count+' งาน)</option>';}).join('');
+      dayEl.value=days[old]?old:(dayKeys[dayKeys.length-1]||'');
+    }
+    if(monthEl){
+      var oldm=monthEl.value;
+      monthEl.innerHTML=monthKeys.map(function(k){return '<option value="'+k+'">'+monthLabel(k)+'</option>';}).join('');
+      monthEl.value=months[oldm]?oldm:(monthKeys[monthKeys.length-1]||'');
+    }
+  }
+  function dailyRows(){
+    var el=document.getElementById('dayPick');
+    if(!el||!el.value) return [];
+    return (window.RAW||[]).filter(function(r){var p=dateParts(r[1]); return p&&p.date===el.value;});
+  }
+  function badge(st){
+    st=String(st||'').trim();
+    if(st.indexOf('ปิด')>=0) return '<span class="badge bg">ปิดงาน</span>';
+    return '<span class="badge ba">'+esc(st||'รอดำเนินการ')+'</span>';
+  }
+  function dailyTable(rows){
+    if(!rows.length) return '<div class="summary-section-title">📋 รายการงานของวันที่เลือก</div><div class="tw"><div class="empty">ไม่มีรายการงานในวันนี้</div></div>';
+    var body=rows.map(function(r){
+      var idx=(window.RAW||[]).indexOf(r);
+      return '<tr data-seq="'+esc(r[0])+'" class="' + (isQueued(r)?'print-selected':'') + '" onclick="openMo('+idx+')">'+
+        queueCell(r)+
+        '<td class="mono">'+esc(r[0])+'</td>'+
+        '<td><b>'+esc(r[2]||'-')+'</b><div class="cell-addr">'+esc(r[1]||'-')+'</div></td>'+
+        '<td>'+esc(r[3]||'-')+'</td>'+
+        '<td class="mono" style="color:var(--teal)">'+esc(r[4]||'-')+'</td>'+
+        '<td>'+esc(r[5]||'-')+'</td>'+
+        '<td><div class="cell-name">'+esc(r[13]||'-')+'</div><div class="cell-addr">'+esc(r[14]||'-')+'</div></td>'+
+        '<td>'+badge(r[11])+'</td>'+
+      '</tr>';
+    }).join('');
+    return '<div class="summary-section-title">📋 รายการงานของวันที่เลือก · '+rows.length.toLocaleString()+' รายการ</div>'+
+      '<div class="tw summary-job-table"><table><thead><tr><th class="print-col">พิมพ์</th><th>#</th><th>ผู้ปฏิบัติ / วันที่</th><th>ประเภทงาน</th><th>มิเตอร์ใหม่ (PEA)</th><th>ขนาด</th><th>ชื่อ / ที่อยู่</th><th>สถานะ</th></tr></thead><tbody>'+body+'</tbody></table></div>';
+  }
+
+  window.renderSummaryDaily=function(){
+    var box=document.getElementById('summaryDaily');
+    if(!box) return;
+    var el=document.getElementById('dayPick');
+    if(!el||!el.value){ box.innerHTML='<div class="summary-alert">ยังไม่มีวันที่ให้เลือก</div>'; return; }
+    var rows=dailyRows();
+    var label=(el.options[el.selectedIndex]&&el.options[el.selectedIndex].textContent||el.value).replace(/\s*\(\d+\s*งาน\)\s*$/,'');
+    box.innerHTML=summaryHtml(rows,'📅 สรุปรายวัน · '+label)+dailyTable(rows);
+  };
+  window.renderSummaryMonthly=function(){
+    var box=document.getElementById('summaryMonthly');
+    if(!box) return;
+    var el=document.getElementById('monthPick');
+    if(!el||!el.value){ box.innerHTML='<div class="summary-alert">ยังไม่มีเดือนให้เลือก</div>'; return; }
+    var rows=(window.RAW||[]).filter(function(r){var p=dateParts(r[1]); return p&&p.month===el.value;});
+    box.innerHTML=summaryHtml(rows,'📆 สรุปรายเดือน · '+monthLabel(el.value));
+  };
+
+  var oldShow=window.showPg;
+  if(typeof oldShow==='function'){
+    window.showPg=function(id,btn){
+      oldShow(id,btn);
+      if(id==='daily'){ initPickers(); window.renderSummaryMonthly(); window.renderSummaryDaily(); }
+    };
+  }
+
+  window.addEventListener('load',function(){
+    setTimeout(function(){ initPickers(); window.renderSummaryMonthly(); window.renderSummaryDaily(); },500);
+  });
+})();
+
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js">
+</script>
 <script>
 let mapInst=null, markerLayer=null, mapInited=false;
 
@@ -1239,6 +1511,7 @@ function filterMap(){
 
   document.getElementById('mapCount').textContent=`แสดง ${count.toLocaleString()} pin`;
 }
+
 </script>
 
 
@@ -1250,10 +1523,10 @@ function doPrint() {
   var s = g(r,11), name = g(r,13) || '(ไม่มีชื่อ)';
   var lat = g(r,9), lng = g(r,10);
   var hasGps = lat && lng && lat !== '0' && lng !== '0';
-  var mru = g(r,16) || '', rmk = g(r,12) || '';
+  var mru = g(r,16) || '', requestNo = g(r,17) || '', rmk = g(r,12) || '';
   var bc2 = s.indexOf('ปิด')>=0 ? 'green' : s.indexOf('รอ')>=0 ? 'amber' : 'gray';
   var bt  = s.indexOf('ปิด')>=0 ? 'ปิดงาน' : s.indexOf('รอ')>=0 ? 'รอดำเนินการ' : (s||'ไม่ระบุ');
-  var now = new Date().toLocaleString('th-TH', {dateStyle:'short', timeStyle:'short'});
+  var now = fmtPrintNow();
   var c = '';
   c += '<div class="print-sheet">';
   c += '<div class="print-header"><div>';
@@ -1265,13 +1538,14 @@ function doPrint() {
   c += '</div></div>';
   c += '<div style="text-align:right;font-size:11px;color:#6b7280">';
   c += '<div>พิมพ์: ' + now + '</div><div>ลำดับที่ ' + g(r,0) + '</div></div></div>';
-  if (mru) {
+  if (requestNo || mru) {
     c += '<div class="print-mru">';
-    c += '<div class="print-mru-label">รหัส MRU</div>';
-    c += '<div class="print-mru-val">' + mru + '</div></div>';
+    c += '<div class="print-mru-item req"><div class="print-mru-label">เลขที่คำร้อง</div><div class="print-mru-val">' + (requestNo || '—') + '</div></div>';
+    c += '<div class="print-mru-item"><div class="print-mru-label">MRU</div><div class="print-mru-val">' + (mru || '—') + '</div></div>';
+    c += '</div>';
   }
   c += '<div class="print-sec"><div class="print-sec-title">ข้อมูลงาน</div><div class="print-grid">';
-  c += '<div class="print-field"><div class="print-field-label">วันที่จ่ายงาน</div><div class="print-field-val">'+(g(r,1)||'—')+'</div></div>';
+  c += '<div class="print-field"><div class="print-field-label">วันที่จ่ายงาน</div><div class="print-field-val">'+fmtDate(g(r,1))+'</div></div>';
   c += '<div class="print-field"><div class="print-field-label">ผู้ปฏิบัติงาน</div><div class="print-field-val">'+(g(r,2)||'—')+'</div></div>';
   c += '<div class="print-field"><div class="print-field-label">ประเภทงาน</div><div class="print-field-val">'+(g(r,3)||'—')+'</div></div>';
   c += '<div class="print-field"><div class="print-field-label">ขนาดมิเตอร์</div><div class="print-field-val">'+(g(r,5)||'—')+'</div></div>';
@@ -1300,16 +1574,22 @@ function doPrint() {
   window.print();
   pa.style.display = 'none';
 }
+
 </script>
 
 <script>
 var printSelectedRows = [];
 
-function toggleQueue() {
-  var r = _printRow;
+function toggleQueueRow(seq, e) {
+  if (e) e.stopPropagation();
+  var r = (RAW || []).find(function(x){ return g(x,0) === String(seq); });
+  if (r) toggleQueueRowData(r);
+}
+
+function toggleQueueRowData(r) {
   if (!r) return;
-  var seq = r[0];
-  var idx = printSelectedRows.findIndex(function(x){ return x[0] === seq; });
+  var seq = g(r,0);
+  var idx = printSelectedRows.findIndex(function(x){ return g(x,0) === seq; });
   if (idx >= 0) {
     printSelectedRows.splice(idx, 1);
   } else {
@@ -1320,20 +1600,48 @@ function toggleQueue() {
     printSelectedRows.push(r);
   }
   updateQueueBar();
-  // Update button text in modal
   var btn = document.getElementById('queueToggleBtn');
-  if (btn) {
-    var inQ = printSelectedRows.some(function(x){ return x[0] === seq; });
+  if (btn && _printRow && g(_printRow,0) === seq) {
+    var inQ = printSelectedRows.some(function(x){ return g(x,0) === seq; });
     btn.className = 'select-print-btn' + (inQ ? ' selected' : '');
     btn.innerHTML = '☑️ ' + (inQ ? 'ถูกเลือกแล้ว (' + printSelectedRows.length + '/4)' : 'เลือกพิมพ์พร้อมกัน');
   }
 }
 
+function toggleQueue() {
+  toggleQueueRowData(_printRow);
+}
+
+function queueEsc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+function queueLabel(r) {
+  var seq = g(r,0) || '-';
+  var req = g(r,17);
+  var mru = g(r,16);
+  var main = req || g(r,4) || seq;
+  return '<span class="pq-chip" title="ลำดับ ' + queueEsc(seq) + (req ? ' · คำร้อง ' + queueEsc(req) : '') + (mru ? ' · MRU ' + queueEsc(mru) : '') + '"><b>#' + queueEsc(seq) + '</b><span>' + queueEsc(main) + '</span>' + (mru ? '<span>· ' + queueEsc(mru) + '</span>' : '') + '</span>';
+}
+
+function refreshQueueHighlights() {
+  document.querySelectorAll('tbody tr[data-seq]').forEach(function(row){
+    var seq = row.getAttribute('data-seq');
+    var on = printSelectedRows.some(function(r){ return g(r,0) === seq; });
+    row.classList.toggle('print-selected', on);
+  });
+}
+
 function updateQueueBar() {
   var bar = document.getElementById('pqBar');
   var cnt = document.getElementById('pqCount');
+  var list = document.getElementById('pqList');
   cnt.textContent = printSelectedRows.length;
+  if (list) list.innerHTML = printSelectedRows.map(queueLabel).join('');
   bar.style.display = printSelectedRows.length > 0 ? 'flex' : 'none';
+  refreshQueueHighlights();
 }
 
 function clearQueue() {
@@ -1345,10 +1653,10 @@ function buildSlip(r, corner) {
   var s = g(r,11), name = g(r,13) || '(ไม่มีชื่อ)';
   var lat = g(r,9), lng = g(r,10);
   var hasGps = lat && lng && lat !== '0' && lng !== '0';
-  var mru = g(r,16) || '', rmk = g(r,12) || '';
+  var mru = g(r,16) || '', requestNo = g(r,17) || '', rmk = g(r,12) || '';
   var bc2 = s.indexOf('ปิด')>=0 ? 'green' : s.indexOf('รอ')>=0 ? 'amber' : 'gray';
   var bt  = s.indexOf('ปิด')>=0 ? 'ปิดงาน' : s.indexOf('รอ')>=0 ? 'รอดำเนินการ' : (s||'ไม่ระบุ');
-  var now = new Date().toLocaleString('th-TH', {dateStyle:'short', timeStyle:'short'});
+  var now = fmtPrintNow();
   var c = '<div class="print-sheet">';
   c += '<div class="print-corner-label">' + corner + '</div>';
   c += '<div class="print-header"><div>';
@@ -1359,11 +1667,14 @@ function buildSlip(r, corner) {
   if (g(r,3)) c += '<span class="print-badge gray">' + g(r,3) + '</span>';
   c += '</div></div>';
   c += '<div class="print-meta">พิมพ์: ' + now + '<br>ลำดับที่ ' + g(r,0) + '</div></div>';
-  if (mru) {
-    c += '<div class="print-mru"><div class="print-mru-label">MRU</div><div class="print-mru-val">' + mru + '</div></div>';
+  if (requestNo || mru) {
+    c += '<div class="print-mru">';
+    c += '<div class="print-mru-item req"><div class="print-mru-label">เลขที่คำร้อง</div><div class="print-mru-val">' + (requestNo || '—') + '</div></div>';
+    c += '<div class="print-mru-item"><div class="print-mru-label">MRU</div><div class="print-mru-val">' + (mru || '—') + '</div></div>';
+    c += '</div>';
   }
   c += '<div class="print-sec"><div class="print-sec-title">ข้อมูลงาน</div><div class="print-grid">';
-  c += '<div class="print-field"><div class="print-field-label">วันที่จ่ายงาน</div><div class="print-field-val">'+(g(r,1)||'—')+'</div></div>';
+  c += '<div class="print-field"><div class="print-field-label">วันที่จ่ายงาน</div><div class="print-field-val">'+fmtDate(g(r,1))+'</div></div>';
   c += '<div class="print-field"><div class="print-field-label">ผู้ปฏิบัติงาน</div><div class="print-field-val">'+(g(r,2)||'—')+'</div></div>';
   c += '<div class="print-field"><div class="print-field-label">ประเภทงาน</div><div class="print-field-val">'+(g(r,3)||'—')+'</div></div>';
   c += '<div class="print-field"><div class="print-field-label">ขนาด</div><div class="print-field-val">'+(g(r,5)||'—')+'</div></div>';
@@ -1438,6 +1749,7 @@ function printQueue() {
   window.print();
   pa.style.display = 'none';
 }
+
 </script>
 
 <script>
@@ -1472,6 +1784,7 @@ function saveUrl() {
       msg.textContent = '✗ ' + e.message + ' — ตรวจสอบ URL หรือ permission';
     });
 }
+
 </script>
 <script>
 var _unlocked = false;
@@ -1492,6 +1805,18 @@ function askPassword(btn) {
     alert('รหัสผ่านไม่ถูกต้อง');
   }
 }
+
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
