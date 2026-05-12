@@ -1072,6 +1072,7 @@ function bl(s){if(s.includes('ปิด'))return'ปิดงาน';if(s.includ
 
 // ── METRICS ──
 function buildMets(el, data){
+  if(!el) return;
   const total=data.length, closed=data.filter(r=>g(r,11).includes('ปิด')).length;
   const pend=total-closed, inst=data.filter(r=>g(r,3).includes('ติดตั้ง')).length;
   el.innerHTML=`
@@ -1264,17 +1265,23 @@ function closeMo(e){if(!e||e.target.id==='mo')document.getElementById('mo').clas
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMo();closeGuidePdf();}});
 
 // ── PENDING ──
-const PENDING = RAW.filter(r=>!g(r,11).includes('ปิด'));
+function getPendingRows(){
+  return (RAW||[]).filter(r=>!g(r,11).includes('ปิด'));
+}
 
 function initPending(){
+  const PENDING = getPendingRows();
   buildMets(document.getElementById('pmets'), PENDING);
   const workers=[...new Set(PENDING.map(r=>g(r,2)).filter(Boolean))].sort();
   const sel=document.getElementById('pw');
+  if(!sel) return;
+  sel.innerHTML='<option value="">ทุกผู้ปฏิบัติ</option>';
   workers.forEach(w=>sel.innerHTML+=`<option>${w}</option>`);
   renderPending();
 }
 
 function renderPending(){
+  const PENDING = getPendingRows();
   const fw=document.getElementById('pw').value;
   const ftype=document.getElementById('ptype').value;
   let data=PENDING.filter(r=>{
@@ -1330,6 +1337,10 @@ function buildByDate(){
 let dailyView='day';
 
 function initDaily(){
+  if(!document.getElementById('dailyContent') && typeof window.refreshSummaryFromLive==='function'){
+    window.refreshSummaryFromLive();
+    return;
+  }
   buildByDate();
   const sel=document.getElementById('dayPick');
   const prev=sel.value;
@@ -1483,26 +1494,47 @@ function initAll() {
 }
 
 async function syncData() {
-  if (!APPS_URL) {
+  var configuredUrl = (APPS_URL || '').trim();
+  var urls = [];
+  if (configuredUrl) urls.push(configuredUrl);
+  if (DEFAULT_APPS_URL && DEFAULT_APPS_URL !== configuredUrl) urls.push(DEFAULT_APPS_URL);
+
+  if (!urls.length) {
     setSync('gray', 'ยังไม่ตั้งค่า Auto-sync · ไม่มีข้อมูลเก่าฝังไว้');
     initAll();
     return;
   }
   setSync('amber', 'กำลังโหลดข้อมูลสด...');
+  var lastErr = null;
   try {
-    var liveUrl = APPS_URL + (APPS_URL.indexOf('?') >= 0 ? '&' : '?') + '_=' + Date.now();
-    var resp = await fetch(liveUrl, {cache: 'no-store'});
-    var j = await resp.json();
-    if (!j.ok || !j.rows || !j.rows.length) throw new Error(j.error || 'ไม่มีข้อมูล');
-    RAW = prepareRows(j.rows);
-    const reqCount = await attachRequestNumbers(RAW);
-    setSync('green', 'สด · ' + j.updated + ' · ' + RAW.length.toLocaleString() + ' รายการ' + (reqCount ? ' · คำร้องพร้อมค้นหา' : ''));
+    for (var i = 0; i < urls.length; i++) {
+      try {
+        var sourceUrl = urls[i];
+        var liveUrl = sourceUrl + (sourceUrl.indexOf('?') >= 0 ? '&' : '?') + '_=' + Date.now();
+        var resp = await fetch(liveUrl, {cache: 'no-store'});
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        var j = await resp.json();
+        if (!j.ok || !j.rows || !j.rows.length) throw new Error(j.error || 'ไม่มีข้อมูล');
+        RAW = prepareRows(j.rows);
+        APPS_URL = sourceUrl;
+        if (sourceUrl === DEFAULT_APPS_URL && configuredUrl && configuredUrl !== DEFAULT_APPS_URL) {
+          localStorage.removeItem('pea_api_url');
+        }
+        const reqCount = await attachRequestNumbers(RAW);
+        setSync('green', 'สด · ' + j.updated + ' · ' + RAW.length.toLocaleString() + ' รายการ' + (reqCount ? ' · คำร้องพร้อมค้นหา' : ''));
+        initAll();
+        return;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error('โหลดข้อมูลไม่ได้');
   } catch(err) {
     RAW = [];
     setSync('amber', 'โหลดข้อมูลสดไม่ได้ · ไม่มีข้อมูลเก่าฝังไว้ (' + err.message + ')');
     await attachRequestNumbers(RAW);
+    initAll();
   }
-  initAll();
 }
 
 const REQUEST_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1YF2naY16qJ7rKUKfjXkVpEm-lidjAAMMSUhdTekHZ68/gviz/tq';
