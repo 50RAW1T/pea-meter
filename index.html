@@ -345,6 +345,30 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 .guide-pill-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
 .guide-pill{font-size:11px;color:var(--blue);background:var(--bluebg);border:1px solid rgba(74,158,255,.25);padding:5px 9px;border-radius:99px}
 .guide-note{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.22);color:var(--amber);border-radius:var(--r);padding:13px 15px;font-size:12px;line-height:1.8}
+.pdf-panel{margin-bottom:14px}
+.pdf-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.pdf-title{font-size:14px;font-weight:600}
+.pdf-sub{font-size:12px;color:var(--t2);line-height:1.7;margin-top:4px}
+.pdf-upload{display:inline-flex;align-items:center;gap:7px;background:var(--blue);color:#fff;border:0;border-radius:var(--rs);padding:9px 13px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.pdf-upload input{display:none}
+.pdf-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.pdf-item{background:var(--bg3);border:1px solid var(--b);border-radius:var(--r);padding:12px}
+.pdf-name{font-size:13px;font-weight:600;color:var(--t);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:5px}
+.pdf-meta{font-size:10px;color:var(--t3);font-family:'IBM Plex Mono',monospace;margin-bottom:10px}
+.pdf-actions{display:flex;gap:7px;flex-wrap:wrap}
+.pdf-btn{border:1px solid var(--b2);background:var(--bg2);color:var(--t);border-radius:var(--rs);padding:7px 10px;font-size:12px;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer}
+.pdf-btn.primary{background:var(--bluebg);border-color:rgba(74,158,255,.35);color:var(--blue)}
+.pdf-btn.danger{color:var(--red)}
+.pdf-empty{border:1px dashed var(--b2);border-radius:var(--r);padding:18px;color:var(--t3);font-size:12px;text-align:center}
+.pdf-viewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:260;padding:18px}
+.pdf-viewer.on{display:flex;align-items:center;justify-content:center}
+.pdf-box{width:min(1100px,96vw);height:min(820px,92vh);background:var(--bg2);border:1px solid var(--b2);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
+.pdf-bar{height:48px;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid var(--b);background:var(--bg3)}
+.pdf-bar-title{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pdf-spacer{flex:1}
+.pdf-close{background:none;border:0;color:var(--t2);font-size:20px;cursor:pointer;padding:5px 9px}
+.pdf-frame{flex:1;width:100%;border:0;background:#111}
+@media(max-width:640px){.pdf-head{align-items:flex-start;flex-direction:column}.pdf-upload{width:100%;justify-content:center}.pdf-viewer{padding:8px}.pdf-box{height:94vh}}
 
 /* SEARCH HELP + SUMMARY */
 .help-box{background:linear-gradient(135deg,rgba(74,158,255,.12),rgba(45,212,191,.06));border:1px solid var(--b2);border-radius:var(--r);padding:14px 16px;margin-bottom:12px}
@@ -501,6 +525,22 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
   <div class="guide-note">
     หมายเหตุ: หน้านี้เป็นคู่มือการใช้งานและคำอธิบายระบบเท่านั้น ไม่ได้แก้ไขข้อมูลใน Google Sheet
     ข้อมูลจริงยังมาจากแหล่งข้อมูลที่ตั้งค่าไว้ในระบบเดิม
+  </div>
+
+  <div class="guide-card pdf-panel">
+    <div class="pdf-head">
+      <div>
+        <div class="pdf-title">📄 คู่มือ PDF จากภายนอก</div>
+        <div class="pdf-sub">เพิ่มไฟล์ PDF จากเครื่อง แล้วเปิดอ่านในเว็บได้ทันที ระบบรับเฉพาะไฟล์ .pdf เท่านั้น</div>
+      </div>
+      <label class="pdf-upload">
+        ＋ เพิ่ม PDF
+        <input id="guidePdfInput" type="file" accept="application/pdf,.pdf" multiple onchange="importGuidePdfs(this.files);this.value=''">
+      </label>
+    </div>
+    <div id="guidePdfList" class="pdf-list">
+      <div class="pdf-empty">ยังไม่มีไฟล์ PDF ในคู่มือ</div>
+    </div>
   </div>
 </div>
 
@@ -709,6 +749,17 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 <div class="mo" id="mo" onclick="closeMo(event)">
   <div class="mbox" id="mbox"></div>
 </div>
+<div class="pdf-viewer" id="pdfViewer" onclick="closeGuidePdf(event)">
+  <div class="pdf-box" onclick="event.stopPropagation()">
+    <div class="pdf-bar">
+      <div class="pdf-bar-title" id="pdfViewerTitle">คู่มือ PDF</div>
+      <div class="pdf-spacer"></div>
+      <a class="pdf-btn primary" id="pdfViewerOpen" href="#" target="_blank" rel="noopener">เปิดแท็บใหม่</a>
+      <button class="pdf-close" onclick="closeGuidePdf()">✕</button>
+    </div>
+    <iframe class="pdf-frame" id="pdfFrame" title="PDF viewer"></iframe>
+  </div>
+</div>
 
 <script>
 // cols: 0=seq,1=date,2=worker,3=type,4=newPea,5=size,6=model,7=oldPea,8=zone,9=lat,10=lng,11=status,12=remark,13=name,14=addr,15=phone,16=mru
@@ -757,6 +808,256 @@ function parseDate(s){
 function fmtDate(s){
   const {y,m,d}=parseDate(s);
   return d&&m ? String(d).padStart(2,'0')+' '+MONTH_LABELS[m]+' '+String(y).padStart(2,'0') : (s||'—');
+}
+
+const GUIDE_PDF_DB='pea_meter_guide_pdf_db';
+const GUIDE_PDF_STORE='pdfs';
+const MANUALS_SHEET_ID='1s7BREBNBUUTiaHfDddvtkLpTED1gRbYIhJkuyUBmPfc';
+const MANUALS_SHEET_NAME='PDF Manuals';
+const DEFAULT_MANUALS_UPLOAD_URL='https://script.google.com/macros/s/AKfycbxXRai0w2Ef5iR4bWH4DeDkIWLhE-dBMglUS7dmKYjSyaLz_ui8Y08G3A7VtDAodDYDvw/exec';
+const MANUALS_UPLOAD_URL=localStorage.getItem('pea_manuals_upload_url')||DEFAULT_MANUALS_UPLOAD_URL;
+const SHARED_GUIDE_PDFS=[];
+let _pdfUrl=null;
+let _remoteGuidePdfs=[];
+function pdfEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function pdfSize(n){
+  n=Number(n)||0;
+  if(n>=1048576)return (n/1048576).toFixed(1)+' MB';
+  if(n>=1024)return Math.round(n/1024)+' KB';
+  return n+' B';
+}
+function openPdfDb(){
+  return new Promise(function(resolve,reject){
+    if(!window.indexedDB){reject(new Error('browser นี้ยังไม่รองรับการเก็บ PDF'));return;}
+    var req=indexedDB.open(GUIDE_PDF_DB,1);
+    req.onupgradeneeded=function(){
+      var db=req.result;
+      if(!db.objectStoreNames.contains(GUIDE_PDF_STORE)){
+        db.createObjectStore(GUIDE_PDF_STORE,{keyPath:'id'});
+      }
+    };
+    req.onsuccess=function(){resolve(req.result);};
+    req.onerror=function(){reject(req.error||new Error('เปิดฐานข้อมูล PDF ไม่ได้'));};
+  });
+}
+function pdfTx(db,mode){
+  return db.transaction(GUIDE_PDF_STORE,mode).objectStore(GUIDE_PDF_STORE);
+}
+function readFileAsBase64(file){
+  return new Promise(function(resolve,reject){
+    var fr=new FileReader();
+    fr.onload=function(){resolve(String(fr.result||'').split(',')[1]||'');};
+    fr.onerror=function(){reject(fr.error||new Error('อ่านไฟล์ไม่ได้'));};
+    fr.readAsDataURL(file);
+  });
+}
+async function importGuidePdfs(files){
+  files=Array.from(files||[]);
+  if(!files.length)return;
+  var bad=files.filter(function(f){return !(f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));});
+  if(bad.length){alert('รับเฉพาะไฟล์ PDF เท่านั้น: '+bad.map(function(f){return f.name;}).join(', '));}
+  var pdfs=files.filter(function(f){return f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf');});
+  if(!pdfs.length)return;
+  if(MANUALS_UPLOAD_URL){
+    try{
+      await Promise.all(pdfs.map(async function(file){
+        var base64=await readFileAsBase64(file);
+        await fetch(MANUALS_UPLOAD_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({name:file.name,type:'application/pdf',size:file.size,category:'คู่มือ',base64:base64})});
+      }));
+      alert('ส่ง PDF ขึ้น Google Drive แล้ว กำลังรีเฟรชรายการ');
+      setTimeout(renderGuidePdfs,2500);
+    }catch(e){alert('อัปโหลด PDF ไม่สำเร็จ: '+e.message);}
+    return;
+  }
+  try{
+    var db=await openPdfDb();
+    await Promise.all(pdfs.map(function(file){
+      return new Promise(function(resolve,reject){
+        var item={id:String(Date.now())+'_'+Math.random().toString(36).slice(2),name:file.name,size:file.size,type:'application/pdf',updated:new Date().toISOString(),blob:file};
+        var req=pdfTx(db,'readwrite').put(item);
+        req.onsuccess=resolve;
+        req.onerror=function(){reject(req.error);};
+      });
+    }));
+    db.close();
+    renderGuidePdfs();
+  }catch(e){alert('เพิ่ม PDF ไม่สำเร็จ: '+e.message);}
+}
+async function getGuidePdfs(){
+  var db=await openPdfDb();
+  return new Promise(function(resolve,reject){
+    var req=pdfTx(db,'readonly').getAll();
+    req.onsuccess=function(){db.close();resolve(req.result||[]);};
+    req.onerror=function(){db.close();reject(req.error);};
+  });
+}
+function loadRemoteGuidePdfs(){
+  function normalizeManualRows(res){
+    if(res&&Array.isArray(res.rows)){
+      return res.rows.filter(function(x){return x.name&&x.url&&String(x.status||'active').toLowerCase()!=='deleted'&&String(x.status||'active').toLowerCase()!=='hidden';});
+    }
+    return (((res&&res.table&&res.table.rows)||[]).map(function(row){
+      var c=row.c||[];
+      function cell(i){return c[i]?String(c[i].f!=null?c[i].f:(c[i].v!=null?c[i].v:'')):'';}
+      return {name:cell(0),url:cell(1),fileId:cell(2),category:cell(3)||'คู่มือ',updated:cell(4),owner:cell(5),status:cell(6)||'active',size:Number(cell(7)||0)};
+    }).filter(function(x){return x.name&&/^https?:\/\//.test(x.url)&&String(x.status).toLowerCase()!=='deleted'&&String(x.status).toLowerCase()!=='hidden';}));
+  }
+  function jsonp(url){
+    return new Promise(function(resolve){
+      var cb='peaManualsCb_'+Date.now()+'_'+Math.floor(Math.random()*10000);
+      var sc=document.createElement('script');
+      var done=function(){delete window[cb];sc.remove();};
+      window[cb]=function(res){try{done();resolve(normalizeManualRows(res));}catch(e){done();resolve([]);}};
+      sc.onerror=function(){done();resolve([]);};
+      sc.src=url+(url.indexOf('?')>=0?'&':'?')+'callback='+cb+'&_='+Date.now();
+      document.head.appendChild(sc);
+    });
+  }
+  return new Promise(async function(resolve){
+    if(!MANUALS_SHEET_ID){resolve([]);return;}
+    var sheetUrl='https://docs.google.com/spreadsheets/d/'+MANUALS_SHEET_ID+'/gviz/tq?tqx=out:json;responseHandler:';
+    var cb='peaManualsCb_'+Date.now()+'_'+Math.floor(Math.random()*10000);
+    var sc=document.createElement('script');
+    var done=function(){delete window[cb];sc.remove();};
+    window[cb]=function(res){
+      try{
+        var rows=normalizeManualRows(res);
+        done();resolve(rows);
+      }catch(e){
+        done();
+        if(MANUALS_UPLOAD_URL) jsonp(MANUALS_UPLOAD_URL).then(resolve);
+        else resolve([]);
+      }
+    };
+    sc.onerror=function(){
+      done();
+      if(MANUALS_UPLOAD_URL) jsonp(MANUALS_UPLOAD_URL).then(resolve);
+      else resolve([]);
+    };
+    sc.src=sheetUrl+cb+'&sheet='+encodeURIComponent(MANUALS_SHEET_NAME)+'&_='+Date.now();
+    document.head.appendChild(sc);
+  });
+}
+async function renderGuidePdfs(){
+  var el=document.getElementById('guidePdfList');
+  if(!el)return;
+  try{
+    var remoteItems=await loadRemoteGuidePdfs();
+    _remoteGuidePdfs=remoteItems;
+    var items=await getGuidePdfs();
+    items.sort(function(a,b){return String(b.updated).localeCompare(String(a.updated));});
+    var sharedHtml=SHARED_GUIDE_PDFS.map(function(it){
+      return '<div class="pdf-item">'+
+        '<div class="pdf-name" title="'+pdfEsc(it.name)+'">📄 '+pdfEsc(it.name)+'</div>'+
+        '<div class="pdf-meta">'+pdfSize(it.size)+' · คู่มือกลาง</div>'+
+        '<div class="pdf-actions">'+
+        '<button class="pdf-btn primary" onclick="openSharedGuidePdf(\''+pdfEsc(it.id)+'\')">เปิดดู</button>'+
+        '</div></div>';
+    }).join('');
+    var remoteHtml=remoteItems.map(function(it,i){
+      return '<div class="pdf-item">'+
+        '<div class="pdf-name" title="'+pdfEsc(it.name)+'">📄 '+pdfEsc(it.name)+'</div>'+
+        '<div class="pdf-meta">'+pdfSize(it.size)+' · Google Drive'+(it.updated?' · '+pdfEsc(it.updated):'')+'</div>'+
+        '<div class="pdf-actions">'+
+        '<button class="pdf-btn primary" onclick="openRemoteGuidePdf('+i+')">เปิดดู</button>'+
+        '<button class="pdf-btn danger" onclick="deleteRemoteGuidePdf('+i+')">ลบ</button>'+
+        '</div></div>';
+    }).join('');
+    var localHtml=items.map(function(it){
+      return '<div class="pdf-item">'+
+        '<div class="pdf-name" title="'+pdfEsc(it.name)+'">📄 '+pdfEsc(it.name)+'</div>'+
+        '<div class="pdf-meta">'+pdfSize(it.size)+' · PDF ส่วนตัว · '+new Date(it.updated).toLocaleString('th-TH')+'</div>'+
+        '<div class="pdf-actions">'+
+        '<button class="pdf-btn primary" onclick="openGuidePdf(\''+pdfEsc(it.id)+'\')">เปิดดู</button>'+
+        '<button class="pdf-btn danger" onclick="deleteGuidePdf(\''+pdfEsc(it.id)+'\')">ลบ</button>'+
+        '</div></div>';
+    }).join('');
+    el.innerHTML=sharedHtml+remoteHtml+localHtml;
+  }catch(e){
+    el.innerHTML=SHARED_GUIDE_PDFS.map(function(it){
+      return '<div class="pdf-item"><div class="pdf-name">📄 '+pdfEsc(it.name)+'</div><div class="pdf-meta">คู่มือกลาง</div><div class="pdf-actions"><button class="pdf-btn primary" onclick="openSharedGuidePdf(\''+pdfEsc(it.id)+'\')">เปิดดู</button></div></div>';
+    }).join('')+'<div class="pdf-empty">โหลด PDF ส่วนตัวไม่ได้: '+pdfEsc(e.message)+'</div>';
+  }
+}
+function drivePreviewUrl(item){
+  if(item.fileId)return 'https://drive.google.com/file/d/'+encodeURIComponent(item.fileId)+'/preview';
+  var m=String(item.url||'').match(/\/d\/([^/]+)\//)||String(item.url||'').match(/[?&]id=([^&]+)/);
+  return m ? 'https://drive.google.com/file/d/'+encodeURIComponent(m[1])+'/preview' : item.url;
+}
+function openRemoteGuidePdf(i){
+  var item=_remoteGuidePdfs[i];
+  if(!item)return;
+  if(_pdfUrl){URL.revokeObjectURL(_pdfUrl);_pdfUrl=null;}
+  var url=drivePreviewUrl(item);
+  document.getElementById('pdfViewerTitle').textContent=item.name;
+  document.getElementById('pdfViewerOpen').href=item.url;
+  document.getElementById('pdfFrame').src=url;
+  document.getElementById('pdfViewer').classList.add('on');
+}
+async function deleteRemoteGuidePdf(i){
+  var item=_remoteGuidePdfs[i];
+  if(!item)return;
+  if(!confirm('ต้องการลบ PDF นี้ออกจากคู่มือใช่ไหม?\\n\\n'+item.name))return;
+  if(!MANUALS_UPLOAD_URL){alert('ยังไม่ได้ตั้งค่า Apps Script สำหรับลบ PDF');return;}
+  try{
+    await fetch(MANUALS_UPLOAD_URL,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'delete',fileId:item.fileId,name:item.name})
+    });
+    setTimeout(renderGuidePdfs,1800);
+  }catch(e){
+    alert('ลบ PDF ไม่สำเร็จ: '+e.message);
+  }
+}
+function openSharedGuidePdf(id){
+  var item=SHARED_GUIDE_PDFS.find(function(x){return x.id===id;});
+  if(!item)return;
+  if(_pdfUrl){URL.revokeObjectURL(_pdfUrl);_pdfUrl=null;}
+  document.getElementById('pdfViewerTitle').textContent=item.name;
+  document.getElementById('pdfViewerOpen').href=item.url;
+  document.getElementById('pdfFrame').src=item.url;
+  document.getElementById('pdfViewer').classList.add('on');
+}
+async function openGuidePdf(id){
+  try{
+    var db=await openPdfDb();
+    var item=await new Promise(function(resolve,reject){
+      var req=pdfTx(db,'readonly').get(id);
+      req.onsuccess=function(){resolve(req.result);};
+      req.onerror=function(){reject(req.error);};
+    });
+    db.close();
+    if(!item)return;
+    if(_pdfUrl)URL.revokeObjectURL(_pdfUrl);
+    _pdfUrl=URL.createObjectURL(item.blob);
+    document.getElementById('pdfViewerTitle').textContent=item.name;
+    document.getElementById('pdfViewerOpen').href=_pdfUrl;
+    document.getElementById('pdfFrame').src=_pdfUrl;
+    document.getElementById('pdfViewer').classList.add('on');
+  }catch(e){alert('เปิด PDF ไม่สำเร็จ: '+e.message);}
+}
+async function deleteGuidePdf(id){
+  if(!confirm('ลบ PDF นี้ออกจากคู่มือ?'))return;
+  try{
+    var db=await openPdfDb();
+    await new Promise(function(resolve,reject){
+      var req=pdfTx(db,'readwrite').delete(id);
+      req.onsuccess=resolve;
+      req.onerror=function(){reject(req.error);};
+    });
+    db.close();
+    renderGuidePdfs();
+  }catch(e){alert('ลบ PDF ไม่สำเร็จ: '+e.message);}
+}
+function closeGuidePdf(e){
+  if(e&&e.target&&e.target.id!=='pdfViewer')return;
+  var viewer=document.getElementById('pdfViewer');
+  var frame=document.getElementById('pdfFrame');
+  if(viewer)viewer.classList.remove('on');
+  if(frame)frame.src='about:blank';
+  if(_pdfUrl){URL.revokeObjectURL(_pdfUrl);_pdfUrl=null;}
 }
 function fmtPrintNow(){
   const n=new Date();
@@ -960,7 +1261,7 @@ function openMo(idx){
   document.getElementById('mo').classList.add('on');
 }
 function closeMo(e){if(!e||e.target.id==='mo')document.getElementById('mo').classList.remove('on');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMo();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMo();closeGuidePdf();}});
 
 // ── PENDING ──
 const PENDING = RAW.filter(r=>!g(r,11).includes('ปิด'));
@@ -1166,6 +1467,7 @@ function showPg(name,btn){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
   document.getElementById('pg-'+name).classList.add('on');
   btn.classList.add('on');
+  if(name==='guide')renderGuidePdfs();
 }
 
 // INIT
