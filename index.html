@@ -722,6 +722,7 @@ const MONTH = {'ม.ค.':1,'ก.พ.':2,'มี.ค.':3,'เม.ย.':4,'พ.�
 const MONTH_LABELS = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
 function g(r,i){return(r&&r[i]!=null)?String(r[i]).trim():'';}
+function zoneVal(r){const z=g(r,8);return z==='1'||z==='2'?z:'';}
 function parseDate(s){
   try{
     s=String(s||'').trim();
@@ -790,7 +791,7 @@ function doSearch(){
     if(q){const h=r.map(v=>String(v||'')).join(' ').toLowerCase(), hk=searchKey(h);if(!h.includes(q)&&!hk.includes(qk)&&!hk.includes(qAlt))return false;}
     if(ft&&!g(r,3).includes(ft))return false;
     if(fst&&!g(r,11).includes(fst))return false;
-    if(fz&&g(r,8)!==fz)return false;
+    if(fz&&zoneVal(r)!==fz)return false;
     if(!passFieldFilter(r,ff))return false;
     return true;
   });
@@ -826,7 +827,7 @@ function renderTable(){
       <td>${g(r,3)||'—'}</td>
       <td class="mono" style="color:var(--teal)">${g(r,4)||'—'}</td>
       <td style="color:var(--t2)">${g(r,5)||'—'}</td>
-      <td style="text-align:center;color:var(--t2)">Z${g(r,8)||'?'}</td>
+      <td style="text-align:center;color:var(--t2)">${zoneVal(r)?'Z'+zoneVal(r):'—'}</td>
       <td>
         <div class="cell-name">${name}</div>
         ${addr?`<div class="cell-addr">${addrShort}</div>`:''}
@@ -899,7 +900,7 @@ function openMo(idx){
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
       <span class="badge ${bc(s)}">${bl(s)}</span>
-      ${g(r,8)?`<span class="badge bgr">Zone ${g(r,8)}</span>`:''}
+      ${zoneVal(r)?`<span class="badge bgr">Zone ${zoneVal(r)}</span>`:''}
       ${g(r,3)?`<span class="badge bgr">${g(r,3)}</span>`:''}
     </div>
     ${(requestNo||mru)?`<div class="msec"><div class="msect">คำร้อง / MRU</div><div class="mgrid"><div class="mf"><div class="mfl">เลขที่คำร้อง</div><div class="mfv mono" style="font-size:14px;color:var(--teal)">${requestNo||'—'}</div></div><div class="mf"><div class="mfl">รหัส MRU</div><div class="mfv mru">${mru||'—'}</div></div></div></div>`:''}
@@ -974,7 +975,7 @@ function renderPending(){
       <td>${g(r,3)||'—'}</td>
       <td class="mono" style="color:var(--teal)">${g(r,4)||'—'}</td>
       <td style="color:var(--t2)">${g(r,5)||'—'}</td>
-      <td style="text-align:center;color:var(--t2)">Z${g(r,8)||'?'}</td>
+      <td style="text-align:center;color:var(--t2)">${zoneVal(r)?'Z'+zoneVal(r):'—'}</td>
       <td><div class="cell-name">${name}</div>${addr?`<div class="cell-addr">${addrShort}</div>`:''}</td>
       <td><span class="badge ${bc(s)}">${bl(s)}</span></td>
     </tr>`;
@@ -1121,7 +1122,7 @@ function buildDash(){
     let s=g(r,11);
     if(s.includes('ปิด'))s='ปิดงาน';else if(s.includes('รอ'))s='รอ';else if(s.includes('ค้าง'))s='ค้างจ่าย';else s='อื่นๆ';
     bySt[s]=(bySt[s]||0)+1;
-    const z='Zone '+(g(r,8)||'?');byZone[z]=(byZone[z]||0)+1;
+    const z=zoneVal(r);if(z)byZone['Zone '+z]=(byZone['Zone '+z]||0)+1;
   });
   const C=['#4a9eff','#4ade80','#fbbf24','#f87171','#2dd4bf','#a78bfa','#fb923c'];
   const SC={'ปิดงาน':'#4ade80','รอ':'#fbbf24','ค้างจ่าย':'#f87171','อื่นๆ':'#8b90a0'};
@@ -1295,6 +1296,9 @@ renderSearchInsights();
   function countBy(rows,idx){
     var o={}; (rows||[]).forEach(function(r){var k=String(r[idx]||'ไม่ระบุ').trim()||'ไม่ระบุ';o[k]=(o[k]||0)+1;}); return o;
   }
+  function countZone(rows){
+    var o={}; (rows||[]).forEach(function(r){var z=zoneVal(r);if(z)o['Zone '+z]=(o['Zone '+z]||0)+1;}); return o;
+  }
   function top(obj,n){
     return Object.keys(obj||{}).map(function(k){return [k,obj[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,n||8);
   }
@@ -1308,7 +1312,7 @@ renderSearchInsights();
   function summaryHtml(rows,title){
     rows=rows||[];
     var total=rows.length, closed=rows.filter(isClosed).length, pending=total-closed, noCoord=rows.filter(function(r){return !hasCoord(r);}).length;
-    var byType=countBy(rows,3), byZone=countBy(rows,8), byWorker=countBy(rows,2);
+    var byType=countBy(rows,3), byZone=countZone(rows), byWorker=countBy(rows,2);
     var topType=top(byType,1)[0]||['-',0], topWorker=top(byWorker,1)[0]||['-',0];
     return '<div class="summary-section-title">'+title+'</div>'+
       '<div class="quick-summary">'+
@@ -1481,10 +1485,11 @@ function filterMap(){
     const s=g(r,11);
     if(fst&&!s.includes(fst)) return;
     if(ftype&&!g(r,3).includes(ftype)) return;
-    if(fzone&&g(r,8)!==fzone) return;
+    if(fzone&&zoneVal(r)!==fzone) return;
 
     // Zone color: Z1=blue circle, Z2=purple circle, overlay with status
-    const zoneColor = g(r,8)==='1' ? '#60a5fa' : g(r,8)==='2' ? '#c084fc' : '#94a3b8';
+    const z=zoneVal(r);
+    const zoneColor = z==='1' ? '#60a5fa' : z==='2' ? '#c084fc' : '#94a3b8';
     const statusRing = s.includes('ปิด') ? '#4ade80' : s.includes('ค้าง') ? '#f87171' : '#fbbf24';
     const icon = mkZoneIcon(zoneColor, statusRing);
     const name=g(r,13)||'ไม่ระบุ';
@@ -1496,7 +1501,7 @@ function filterMap(){
       <div class="mp-name">${name}</div>
       <div class="mp-badges">
         <span class="badge ${bc(s)}">${bl(s)}</span>
-        ${g(r,8)?`<span class="badge bgr">Zone ${g(r,8)}</span>`:''}
+        ${z?`<span class="badge bgr">Zone ${z}</span>`:''}
       </div>
       ${mru?`<div class="mp-row"><span class="mp-label">MRU</span><span class="mp-val amber">${mru}</span></div>`:''}
       <div class="mp-row"><span class="mp-label">มิเตอร์</span><span class="mp-val teal">${g(r,4)||'—'}</span></div>
@@ -1535,7 +1540,7 @@ function doPrint() {
   c += '<div class="print-logo">PEA METER · บางละมุง</div>';
   c += '<div class="print-title">' + name + '</div>';
   c += '<div class="print-badges"><span class="print-badge ' + bc2 + '">' + bt + '</span>';
-  if (g(r,8)) c += '<span class="print-badge gray">Zone ' + g(r,8) + '</span>';
+  if (zoneVal(r)) c += '<span class="print-badge gray">Zone ' + zoneVal(r) + '</span>';
   if (g(r,3)) c += '<span class="print-badge gray">' + g(r,3) + '</span>';
   c += '</div></div>';
   c += '<div style="text-align:right;font-size:11px;color:#6b7280">';
@@ -1665,7 +1670,7 @@ function buildSlip(r, corner) {
   c += '<div class="print-logo">PEA METER · บางละมุง</div>';
   c += '<div class="print-title">' + name + '</div>';
   c += '<div class="print-badges"><span class="print-badge ' + bc2 + '">' + bt + '</span>';
-  if (g(r,8)) c += '<span class="print-badge gray">Zone ' + g(r,8) + '</span>';
+  if (zoneVal(r)) c += '<span class="print-badge gray">Zone ' + zoneVal(r) + '</span>';
   if (g(r,3)) c += '<span class="print-badge gray">' + g(r,3) + '</span>';
   c += '</div></div>';
   c += '<div class="print-meta">พิมพ์: ' + now + '<br>ลำดับที่ ' + g(r,0) + '</div></div>';
