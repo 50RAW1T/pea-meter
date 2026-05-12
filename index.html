@@ -1231,6 +1231,14 @@ syncData();
 function countBy(arr, idx){
   var o={}; arr.forEach(function(r){ var k=(r[idx]||'ไม่ระบุ').trim()||'ไม่ระบุ'; o[k]=(o[k]||0)+1; }); return o;
 }
+function countZonesOnly(arr){
+  var o={};
+  (arr||[]).forEach(function(r){
+    var z=zoneVal(r);
+    if(z)o[z]=(o[z]||0)+1;
+  });
+  return o;
+}
 function topItems(obj, max){
   return Object.keys(obj).map(function(k){return [k,obj[k]]}).sort(function(a,b){return b[1]-a[1]}).slice(0,max);
 }
@@ -1247,7 +1255,7 @@ function renderSearchInsights(){
   var closed=RAW.filter(function(r){return (r[11]||'').indexOf('ปิด')>-1}).length;
   var pending=total-closed;
   var noCoord=RAW.filter(function(r){var lat=(r[9]||'').trim(), lng=(r[10]||'').trim(); return !lat||!lng||lat==='ไม่มีพิกัด';}).length;
-  var z=countBy(RAW,8), t=countBy(RAW,3), st={'ปิดงาน':closed,'รอดำเนินการ':pending};
+  var z=countZonesOnly(RAW), t=countBy(RAW,3), st={'ปิดงาน':closed,'รอดำเนินการ':pending};
   var html='<div class="quick-summary">'
     +'<div class="qs-card"><div class="qs-label">งานทั้งหมด</div><div class="qs-value">'+total+'</div><div class="qs-note">รายการในระบบ</div></div>'
     +'<div class="qs-card g"><div class="qs-label">ปิดงานแล้ว</div><div class="qs-value">'+closed+'</div><div class="qs-note">ดำเนินการเสร็จ</div></div>'
