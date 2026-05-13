@@ -432,6 +432,7 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 
 <div class="nav">
   <button class="tab on" onclick="showPg('search',this)">🔍 ค้นหางาน</button>
+  <button class="tab" onclick="showPg('ami',this)">⚡ เลิกใช้ปกติ</button>
   <button class="tab" onclick="showPg('guide',this)">📘 คู่มือ</button>
   <button class="tab" onclick="showPg('pending',this)">⏳ งานค้าง</button>
   <button class="tab" onclick="showPg('daily',this)">📊 สรุป</button>
@@ -606,6 +607,41 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
   <div class="tw" id="tw"></div>
 </div>
 
+<!-- ══ NORMAL DISCONNECT PAGE ══ -->
+<div class="pg" id="pg-ami">
+  <div class="mets" id="amiMets"></div>
+  <div class="help-box">
+    <div class="help-title">⚡ เลิกใช้ปกติ</div>
+    <div class="help-desc">ข้อมูลจาก Google Sheet แท็บ AMI และจานหมุน แสดงแยกจากงานจ่ายมิเตอร์หลัก</div>
+    <div class="help-tags">
+      <span class="help-tag">HPTY</span><span class="help-tag">เลขหลัง 6 ตัว</span><span class="help-tag">PEA</span><span class="help-tag">เลขคำร้อง</span><span class="help-tag">เลข INST</span><span class="help-tag">ผู้ปฏิบัติงาน</span>
+    </div>
+  </div>
+  <div class="sw">
+    <input class="si" id="amiQi" type="text" placeholder="ค้นหา: HPTY, เลขหลัง 6 ตัว, PEA, คำร้อง, INST, ผู้ปฏิบัติงาน..." oninput="renderAmi()">
+    <select class="fs" id="amiSource" onchange="renderAmi()">
+      <option value="">ทุกแหล่งข้อมูล</option>
+    </select>
+    <select class="fs" id="amiWorker" onchange="renderAmi()">
+      <option value="">ทุกผู้ปฏิบัติ</option>
+    </select>
+    <select class="fs" id="amiDateRange" onchange="renderAmi()">
+      <option value="">ทุกช่วงวันที่</option>
+      <option value="today">วันนี้</option>
+      <option value="7d">7 วันล่าสุด</option>
+      <option value="30d">30 วันล่าสุด</option>
+      <option value="month">เดือนนี้</option>
+    </select>
+    <select class="fs" id="amiSt" onchange="renderAmi()">
+      <option value="">ทุกสถานะ</option>
+      <option value="รอ">รอดำเนินการ</option>
+      <option value="ปิด">ปิดงาน</option>
+    </select>
+  </div>
+  <div class="ri" id="amiRi"></div>
+  <div class="tw" id="amiTw"></div>
+</div>
+
 <!-- ══ PENDING PAGE ══ -->
 <div class="pg" id="pg-pending">
   <div class="mets" id="pmets"></div>
@@ -655,8 +691,12 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 
 <!-- ══ DASHBOARD PAGE ══ -->
 <div class="pg" id="pg-dash">
+  <div class="help-box">
+    <div class="help-title">📈 Dashboard รวม</div>
+    <div class="help-desc">สรุปภาพรวมจากหน้างานหลักและหน้าเลิกใช้ปกติ แยกกราฟเป็นคนละชุดเพื่อเทียบจำนวน งานค้าง สถานะ ผู้ปฏิบัติงาน และแหล่งข้อมูลได้ในหน้าเดียว</div>
+  </div>
   <div class="mets" id="dmets"></div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px" id="dcharts"></div>
+  <div id="dcharts"></div>
 </div>
 
 
@@ -764,8 +804,12 @@ td{padding:9px 12px;font-size:12px;vertical-align:top}
 <script>
 // cols: 0=seq,1=date,2=worker,3=type,4=newPea,5=size,6=model,7=oldPea,8=zone,9=lat,10=lng,11=status,12=remark,13=name,14=addr,15=phone,16=mru
 var RAW = [];
+var AMI_ROWS = [];
 const DEFAULT_APPS_URL = 'https://script.google.com/macros/s/AKfycbzAeSwH7slRk9kZi63lk4KRWOq4qmwqQoVcfdR4ZYAoObVGreEjl_EENmBxlVDcGGqI/exec';
 var APPS_URL = localStorage.getItem('pea_api_url') || DEFAULT_APPS_URL;
+const AMI_SHEET_ID = '1JSylUaOrnG2kOPA49aRgZM0Ub2rW5mmp90G1rSqJPB4';
+const AMI_SHEET_NAME = 'AMI';
+const ROTARY_SHEET_NAME = 'จานหมุน';
 // 0=seq,1=date,2=worker,3=type,4=newPea,5=size,6=model,7=oldPea,8=zone,9=lat,10=lng,11=status,12=remark,13=name,14=addr,15=phone,16=mru
 
 const MONTH = {'ม.ค.':1,'ก.พ.':2,'มี.ค.':3,'เม.ย.':4,'พ.ค.':5,'มิ.ย.':6,'ก.ค.':7,'ส.ค.':8,'ก.ย.':9,'ต.ค.':10,'พ.ย.':11,'ธ.ค.':12};
@@ -794,6 +838,81 @@ function dedupeRows(rows){
 }
 function prepareRows(rows){
   return cleanZones(dedupeRows(rows));
+}
+function cellText(c){
+  return c ? String(c.f != null ? c.f : (c.v != null ? c.v : '')).trim() : '';
+}
+function gvizSheetRows(sheetId, sheetName, range){
+  return new Promise(function(resolve,reject){
+    var cb='peaGvizCb_'+Date.now()+'_'+Math.floor(Math.random()*10000);
+    var sc=document.createElement('script');
+    var done=function(){delete window[cb];sc.remove();};
+    window[cb]=function(res){
+      try{
+        if(!res||res.status!=='ok'||!res.table) throw new Error('โหลดชีต '+sheetName+' ไม่ได้');
+        var rows=(res.table.rows||[]).map(function(row){
+          return (row.c||[]).map(cellText);
+        });
+        done();resolve(rows);
+      }catch(e){done();reject(e);}
+    };
+    sc.onerror=function(){done();reject(new Error('โหลดชีต '+sheetName+' ไม่ได้'));};
+    sc.src='https://docs.google.com/spreadsheets/d/'+sheetId+'/gviz/tq?tqx=out:json;responseHandler:'+cb+'&sheet='+encodeURIComponent(sheetName)+'&range='+encodeURIComponent(range)+'&_='+Date.now();
+    document.head.appendChild(sc);
+  });
+}
+function amiStatus(r){
+  var text=[r[13],r[14],r[15],r[16],r[18],r[19]].join(' ');
+  if(text.indexOf('ปิด')>=0||text.indexOf('BILLING')>=0||text.indexOf('บส')>=0) return 'ปิดงาน';
+  if(text.indexOf('เปิดใบงานแล้ว')>=0) return 'เปิดใบงานแล้ว';
+  if(text.indexOf('ยังไม่ได้เปิดใบงาน')>=0||text.indexOf('รอเปิด')>=0) return 'รอเปิดใบงาน';
+  if(text.indexOf('รอ')>=0) return 'รอดำเนินการ';
+  return 'รอดำเนินการ';
+}
+function mapDisconnectRows(rows, sourceName){
+  var isRotary=sourceName==='จานหมุน';
+  var dateIdx=isRotary?10:11;
+  var workerIdx=isRotary?9:10;
+  var requestIdx=isRotary?6:7;
+  var instIdx=isRotary?8:9;
+  var displayNameIdx=isRotary?20:10;
+  var addressIdx=isRotary?21:-1;
+  return (rows||[]).slice(1).filter(function(r){
+    return r && (r[0]||r[1]||r[3]);
+  }).map(function(r){
+    var remark=[r[13],r[14],r[15],r[16],r[18],r[19]].filter(Boolean).join(' | ');
+    return [
+      sourceName+'-'+(r[0]||''),
+      r[dateIdx]||'',
+      r[workerIdx]||'ไม่ระบุ',
+      'เลิกใช้ปกติ',
+      r[3]||'',
+      r[4]||'',
+      r[5]||'',
+      r[instIdx]||'',
+      sourceName,
+      '',
+      '',
+      amiStatus(r),
+      remark,
+      r[displayNameIdx]||r[workerIdx]||'',
+      addressIdx>=0 ? (r[addressIdx]||'') : '',
+      '',
+      r[1]||'',
+      r[requestIdx]||'',
+      r[2]||''
+    ];
+  });
+}
+async function loadAmiRows(){
+  try{
+    var ami=mapDisconnectRows(await gvizSheetRows(AMI_SHEET_ID, AMI_SHEET_NAME, 'A:V'), 'AMI');
+    var rotary=mapDisconnectRows(await gvizSheetRows(AMI_SHEET_ID, ROTARY_SHEET_NAME, 'A:V'), 'จานหมุน');
+    return ami.concat(rotary);
+  }catch(e){
+    console.warn('Disconnect sync skipped:', e.message);
+    return [];
+  }
 }
 function parseDate(s){
   try{
@@ -1164,6 +1283,148 @@ function renderTable(){
   document.getElementById('tw').innerHTML=h;
 }
 
+function setSelectOptions(el, values, firstLabel){
+  if(!el) return;
+  var old=el.value;
+  el.innerHTML='<option value="">'+firstLabel+'</option>'+values.map(function(v){
+    return '<option value="'+String(v).replace(/"/g,'&quot;')+'">'+v+'</option>';
+  }).join('');
+  if(values.indexOf(old)>=0) el.value=old;
+}
+function refreshAmiFilters(rows){
+  setSelectOptions(
+    document.getElementById('amiSource'),
+    [...new Set((rows||[]).map(function(r){return g(r,8);}).filter(Boolean))].sort(),
+    'ทุกแหล่งข้อมูล'
+  );
+  setSelectOptions(
+    document.getElementById('amiWorker'),
+    [...new Set((rows||[]).map(function(r){return g(r,2);}).filter(Boolean))].sort(),
+    'ทุกผู้ปฏิบัติ'
+  );
+  setSelectOptions(
+    document.getElementById('amiSt'),
+    [...new Set((rows||[]).map(function(r){return g(r,11);}).filter(Boolean))].sort(),
+    'ทุกสถานะ'
+  );
+}
+function dateObjFromRow(r){
+  var p=parseDate(g(r,1));
+  if(!p.y||!p.m||!p.d) return null;
+  var fullYear=p.y<100 ? 2000+p.y : p.y;
+  return new Date(fullYear, p.m-1, p.d);
+}
+function passAmiDateRange(r, range){
+  if(!range) return true;
+  var d=dateObjFromRow(r);
+  if(!d) return false;
+  var now=new Date();
+  var start=new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if(range==='today') return d.getTime()===start.getTime();
+  if(range==='7d'){var s7=new Date(start);s7.setDate(s7.getDate()-6);return d>=s7&&d<=start;}
+  if(range==='30d'){var s30=new Date(start);s30.setDate(s30.getDate()-29);return d>=s30&&d<=start;}
+  if(range==='month') return d.getFullYear()===start.getFullYear()&&d.getMonth()===start.getMonth();
+  return true;
+}
+function buildAmiMets(data){
+  var el=document.getElementById('amiMets');
+  if(!el) return;
+  data=data||[];
+  var total=data.length;
+  var closed=data.filter(function(r){return g(r,11).includes('ปิด');}).length;
+  var pending=total-closed;
+  var ami=data.filter(function(r){return g(r,8)==='AMI';}).length;
+  var rotary=data.filter(function(r){return g(r,8)==='จานหมุน';}).length;
+  el.innerHTML=
+    '<div class="met"><div class="ml">ทั้งหมด</div><div class="mv">'+total.toLocaleString()+'</div><div class="ms">รายการ</div></div>'+
+    '<div class="met a"><div class="ml">รอดำเนินการ</div><div class="mv">'+pending.toLocaleString()+'</div><div class="ms">ยังไม่ปิด</div></div>'+
+    '<div class="met g"><div class="ml">ปิดงาน</div><div class="mv">'+closed.toLocaleString()+'</div><div class="ms">'+(total?Math.round(closed/total*100):0)+'%</div></div>'+
+    '<div class="met t"><div class="ml">AMI</div><div class="mv">'+ami.toLocaleString()+'</div><div class="ms">'+(total?Math.round(ami/total*100):0)+'%</div></div>'+
+    '<div class="met p"><div class="ml">จานหมุน</div><div class="mv">'+rotary.toLocaleString()+'</div><div class="ms">'+(total?Math.round(rotary/total*100):0)+'%</div></div>';
+}
+function renderAmi(){
+  var rows=AMI_ROWS||[];
+  var q=(document.getElementById('amiQi')?.value||'').toLowerCase().trim();
+  var source=document.getElementById('amiSource')?.value||'';
+  var worker=document.getElementById('amiWorker')?.value||'';
+  var dateRange=document.getElementById('amiDateRange')?.value||'';
+  var st=document.getElementById('amiSt')?.value||'';
+  var data=rows.filter(function(r){
+    if(source&&g(r,8)!==source) return false;
+    if(worker&&g(r,2)!==worker) return false;
+    if(!passAmiDateRange(r,dateRange)) return false;
+    if(st&&!g(r,11).includes(st)) return false;
+    if(q){
+      var h=r.map(function(v){return String(v||'');}).join(' ').toLowerCase();
+      var hk=searchKey(h), qk=searchKey(q);
+      if(!h.includes(q)&&!hk.includes(qk)) return false;
+    }
+    return true;
+  }).sort(function(a,b){
+    return dateSortKey(g(b,1))-dateSortKey(g(a,1));
+  });
+  refreshAmiFilters(rows);
+  buildAmiMets(data);
+  var ri=document.getElementById('amiRi');
+  if(ri) ri.textContent='พบ '+data.length.toLocaleString()+' รายการ';
+  var box=document.getElementById('amiTw');
+  if(!box) return;
+  if(!data.length){box.innerHTML='<div class="empty">ไม่พบรายการเลิกใช้</div>';return;}
+  var h='<table><thead><tr><th class="print-col">พิมพ์</th><th>#</th><th>วันที่</th><th>ผู้ปฏิบัติ</th><th>ประเภทงาน</th><th>มิเตอร์ (PEA)</th><th>ขนาด</th><th>แหล่งข้อมูล</th><th>ชื่อ / ที่อยู่</th><th>สถานะ</th></tr></thead><tbody>';
+  data.forEach(function(r,i){
+    var s=g(r,11), name=g(r,13)||'ไม่ระบุ', addr=g(r,14);
+    var addrShort=addr.length>56?addr.slice(0,54)+'…':addr;
+    var hpty=g(r,16), tail=g(r,18), req=g(r,17), inst=g(r,7);
+    var sub=[hpty, tail, req?('คำร้อง '+req):'', inst?('INST '+inst):''].filter(Boolean).join(' · ');
+    h+='<tr data-seq="'+g(r,0)+'" class="'+(isQueued(r)?'print-selected':'')+'" onclick="openAmiMo('+i+')">'+
+      queueCell(r)+
+      '<td class="mono" style="color:var(--t3)">'+g(r,0)+'</td>'+
+      '<td class="mono">'+fmtDate(g(r,1))+'</td>'+
+      '<td>'+g(r,2)+'</td>'+
+      '<td>'+g(r,3)+'</td>'+
+      '<td class="mono" style="color:var(--teal)">'+g(r,4)+'</td>'+
+      '<td>'+g(r,5)+'</td>'+
+      '<td style="color:var(--t2)">'+g(r,8)+'</td>'+
+      '<td><div class="cell-name">'+name+'</div>'+(addr?'<div class="cell-addr">'+addrShort+'</div>':'')+(sub?'<div class="cell-addr mono">'+sub+'</div>':'')+'</td>'+
+      '<td><span class="badge '+bc(s)+'">'+bl(s)+'</span></td>'+
+    '</tr>';
+  });
+  h+='</tbody></table>';
+  box.innerHTML=h;
+  window.amiFiltered=data;
+}
+function openAmiMo(i){
+  var data=window.amiFiltered||AMI_ROWS||[];
+  var r=data[i];
+  if(!r) return;
+  _printRow=r;
+  var reason=g(r,12);
+  document.getElementById('mbox').innerHTML=
+    '<div class="mh"><div class="mt">⚡ '+(g(r,13)||'เลิกใช้ปกติ')+'</div><button class="mc" onclick="closeMo()">×</button></div>'+
+    '<div class="msec"><div class="msect">สถานะ</div><span class="badge '+bc(g(r,11))+'">'+bl(g(r,11))+'</span></div>'+
+    '<div class="msec"><div class="msect">รหัสงาน</div><div class="mgrid">'+
+      '<div class="mf"><div class="mfl">HPTY</div><div class="mfv mono">'+(g(r,16)||'—')+'</div></div>'+
+      '<div class="mf"><div class="mfl">เลขหลัง 6 ตัว</div><div class="mfv mono">'+(g(r,18)||'—')+'</div></div>'+
+      '<div class="mf"><div class="mfl">มิเตอร์ PEA</div><div class="mfv mono">'+(g(r,4)||'—')+'</div></div>'+
+      '<div class="mf"><div class="mfl">เลข INST</div><div class="mfv mono">'+(g(r,7)||'—')+'</div></div>'+
+      '<div class="mf"><div class="mfl">เลขคำร้อง</div><div class="mfv mono">'+(g(r,17)||'—')+'</div></div>'+
+      '<div class="mf"><div class="mfl">แหล่งข้อมูล</div><div class="mfv">'+(g(r,8)||'—')+'</div></div>'+
+    '</div></div>'+
+    '<div class="msec"><div class="msect">ข้อมูลงาน</div><div class="mgrid">'+
+      '<div class="mf"><div class="mfl">วันที่ได้รับใบงาน</div><div class="mfv">'+fmtDate(g(r,1))+'</div></div>'+
+      '<div class="mf"><div class="mfl">ผู้ปฏิบัติงาน</div><div class="mfv">'+(g(r,2)||'—')+'</div></div>'+
+      '<div class="mf"><div class="mfl">ประเภทงาน</div><div class="mfv">'+(g(r,3)||'—')+'</div></div>'+
+      '<div class="mf"><div class="mfl">ขนาด</div><div class="mfv">'+(g(r,5)||'—')+'</div></div>'+
+    '</div></div>'+
+    '<div class="msec"><div class="msect">ผู้ใช้ไฟ / ที่อยู่</div><div class="mgrid">'+
+      '<div class="mf full"><div class="mfl">ชื่อ</div><div class="mfv">'+(g(r,13)||'—')+'</div></div>'+
+      '<div class="mf full"><div class="mfl">ที่อยู่</div><div class="mfv">'+(g(r,14)||'—')+'</div></div>'+
+    '</div></div>'+
+    (reason?'<div class="msec"><div class="msect">เหตุผล / หมายเหตุ</div><div class="mf full"><div class="mfv">'+reason+'</div></div></div>':'')+
+    '<button class="copy-btn" onclick="copyJobText()">📋 คัดลอกข้อมูลงาน</button>';
+  document.getElementById('mo').classList.add('on');
+}
+
 function buildPgn(c,t){
   if(t<=1)return'';
   const pages=new Set([1,2,c-1,c,c+1,t-1,t].filter(p=>p>=1&&p<=t));
@@ -1443,34 +1704,97 @@ function openDailyMo(i){filtered=dailyData;openMo(i);}
 
 // ── DASHBOARD ──
 function buildDash(){
-  buildMets(document.getElementById('dmets'), RAW);
-  const byType={},byWorker={},bySt={},byZone={};
-  RAW.forEach(r=>{
-    let t=g(r,3)||'ไม่ระบุ';
-    if(t.includes('ติดตั้งใหม่'))t='ติดตั้งใหม่';
-    else if(t.includes('เพิ่มขนาด'))t='เพิ่มขนาด';
-    else if(t.includes('TOU'))t='เปลี่ยนประเภท TOU';
-    else if(t.includes('เปลี่ยน'))t='เปลี่ยนประเภท';
-    byType[t]=(byType[t]||0)+1;
-    const w=g(r,2)||'ไม่ระบุ';byWorker[w]=(byWorker[w]||0)+1;
-    let s=g(r,11);
-    if(s.includes('ปิด'))s='ปิดงาน';else if(s.includes('รอ'))s='รอ';else if(s.includes('ค้าง'))s='ค้างจ่าย';else s='อื่นๆ';
-    bySt[s]=(bySt[s]||0)+1;
-    const z=zoneVal(r);byZone[z]=(byZone[z]||0)+1;
-  });
-  const C=['#4a9eff','#4ade80','#fbbf24','#f87171','#2dd4bf','#a78bfa','#fb923c'];
-  const SC={'ปิดงาน':'#4ade80','รอ':'#fbbf24','ค้างจ่าย':'#f87171','อื่นๆ':'#8b90a0'};
-  function hbars(obj,n,cols){
-    const top=Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,n);
-    const mx=top[0]?.[1]||1;
-    return top.map(([k,v],i)=>`<div class="hbr"><div class="hbl" title="${k}">${k}</div><div class="hbt"><div class="hbf" style="width:${Math.round(v/mx*100)}%;background:${cols[i%cols.length]}"></div></div><div class="hbv">${v.toLocaleString()}</div></div>`).join('');
+  const mainRows = RAW || [];
+  const discRows = AMI_ROWS || [];
+  const allRows = mainRows.concat(discRows);
+  const mainClosed = mainRows.filter(r=>g(r,11).includes('ปิด')).length;
+  const discClosed = discRows.filter(r=>g(r,11).includes('ปิด')).length;
+  const total = allRows.length;
+  const closed = mainClosed + discClosed;
+  const waiting = total - closed;
+  const el = document.getElementById('dmets');
+  if(el){
+    el.innerHTML = `
+      <div class="met"><div class="ml">งานหลัก</div><div class="mv">${mainRows.length.toLocaleString()}</div><div class="ms">รายการ</div></div>
+      <div class="met g"><div class="ml">เลิกใช้ปกติ</div><div class="mv">${discRows.length.toLocaleString()}</div><div class="ms">รายการ</div></div>
+      <div class="met t"><div class="ml">รวมทั้งหมด</div><div class="mv">${total.toLocaleString()}</div><div class="ms">รายการ</div></div>
+      <div class="met a"><div class="ml">รอรวม</div><div class="mv">${waiting.toLocaleString()}</div><div class="ms">ยังไม่ปิด</div></div>
+      <div class="met g"><div class="ml">ปิดรวม</div><div class="mv">${closed.toLocaleString()}</div><div class="ms">${total?Math.round(closed/total*100):0}%</div></div>
+    `;
   }
-  document.getElementById('dcharts').innerHTML=`
-    <div class="cc"><div class="cct">ประเภทงาน</div><div class="hb">${hbars(byType,8,C)}</div></div>
-    <div class="cc"><div class="cct">ผู้ปฏิบัติงาน</div><div class="hb">${hbars(byWorker,8,C)}</div></div>
-    <div class="cc"><div class="cct">สถานะงาน</div><div class="hb">${Object.entries(bySt).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="hbr"><div class="hbl">${k}</div><div class="hbt"><div class="hbf" style="width:${Math.round(v/(bySt['ปิดงาน']||1)*100)}%;background:${SC[k]||'#8b90a0'}"></div></div><div class="hbv">${v.toLocaleString()}</div></div>`).join('')}</div></div>
-    <div class="cc"><div class="cct">Zone</div><div class="hb">${hbars(byZone,4,C)}</div></div>
-  `;
+
+  function dashEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function bump(obj,key){key=(key||'ไม่ระบุ').trim()||'ไม่ระบุ';obj[key]=(obj[key]||0)+1;}
+  function normalizeType(v){
+    v = v || 'ไม่ระบุ';
+    if(v.includes('ติดตั้งใหม่'))return 'ติดตั้งใหม่';
+    if(v.includes('เพิ่มขนาด'))return 'เพิ่มขนาด';
+    if(v.includes('TOU'))return 'เปลี่ยนประเภท TOU';
+    if(v.includes('เปลี่ยน'))return 'เปลี่ยนประเภท';
+    return v || 'ไม่ระบุ';
+  }
+  function normalizeStatus(v){
+    v = v || '';
+    if(v.includes('ปิด'))return 'ปิดงาน';
+    if(v.includes('เปิดใบงาน'))return 'เปิดใบงานแล้ว';
+    if(v.includes('รอเปิด'))return 'รอเปิดใบงาน';
+    if(v.includes('รอ'))return 'รอดำเนินการ';
+    if(v.includes('ค้าง'))return 'ค้างจ่าย';
+    return v || 'อื่นๆ';
+  }
+  function monthBucket(r){
+    const p = parseDate(g(r,1));
+    if(!p || !p.m)return 'ไม่ระบุ';
+    return (MONTH_LABELS[p.m] || p.m) + ' ' + String(p.y || '').padStart(2,'0');
+  }
+  function collect(rows, fn){
+    const obj = {};
+    rows.forEach(r=>bump(obj, fn(r)));
+    return obj;
+  }
+  function bars(title,obj,limit,color){
+    const items = Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,limit||8);
+    if(!items.length)return `<div class="mini-chart"><h3>${dashEsc(title)}</h3><div class="empty">ไม่มีข้อมูล</div></div>`;
+    const max = items[0][1] || 1;
+    return `<div class="mini-chart"><h3>${dashEsc(title)}</h3>` + items.map(([k,v])=>{
+      const pct = Math.max(4, Math.round(v / max * 100));
+      return `<div class="chart-row"><div class="chart-label" title="${dashEsc(k)}">${dashEsc(k)}</div><div class="chart-track"><div class="chart-fill" style="width:${pct}%;${color?'background:'+color:''}"></div></div><div class="chart-value">${v.toLocaleString()}</div></div>`;
+    }).join('') + `</div>`;
+  }
+
+  const mainType = collect(mainRows, r=>normalizeType(g(r,3)));
+  const mainWorker = collect(mainRows, r=>g(r,2));
+  const mainStatus = collect(mainRows, r=>normalizeStatus(g(r,11)));
+  const mainZone = collect(mainRows, r=>zoneVal(r));
+  const mainMonth = collect(mainRows, monthBucket);
+
+  const discSource = collect(discRows, r=>g(r,8));
+  const discStatus = collect(discRows, r=>normalizeStatus(g(r,11)));
+  const discWorker = collect(discRows, r=>g(r,2));
+  const discSize = collect(discRows, r=>g(r,5));
+  const discMonth = collect(discRows, monthBucket);
+
+  const chartEl = document.getElementById('dcharts');
+  if(chartEl){
+    chartEl.innerHTML = `
+      <div class="summary-section-title">งานจ่ายมิเตอร์</div>
+      <div class="chart-grid">
+        ${bars('สถานะงาน', mainStatus, 8, '#4a9eff')}
+        ${bars('ประเภทงาน', mainType, 8)}
+        ${bars('ผู้ปฏิบัติงาน', mainWorker, 10)}
+        ${bars('Zone', mainZone, 6)}
+        ${bars('เดือนที่ได้รับใบงาน', mainMonth, 8)}
+      </div>
+      <div class="summary-section-title">เลิกใช้ปกติ</div>
+      <div class="chart-grid">
+        ${bars('สถานะละเอียด', discStatus, 8, '#2dd4bf')}
+        ${bars('แหล่งข้อมูล', discSource, 4)}
+        ${bars('ผู้ปฏิบัติงาน', discWorker, 10)}
+        ${bars('ขนาดมิเตอร์', discSize, 8)}
+        ${bars('เดือนที่ได้รับใบงาน', discMonth, 8)}
+      </div>
+    `;
+  }
 }
 
 function showPg(name,btn){
@@ -1484,8 +1808,10 @@ function showPg(name,btn){
 // INIT
 function initAll() {
   RAW = prepareRows(RAW);
+  AMI_ROWS = prepareRows(AMI_ROWS);
   buildMets(document.getElementById('mets'), RAW);
   doSearch();
+  renderAmi();
   initPending();
   initDaily();
   buildDash();
@@ -1515,13 +1841,14 @@ async function syncData() {
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         var j = await resp.json();
         if (!j.ok || !j.rows || !j.rows.length) throw new Error(j.error || 'ไม่มีข้อมูล');
-        RAW = prepareRows(j.rows);
+        AMI_ROWS = prepareRows(await loadAmiRows());
+        RAW = prepareRows(j.rows||[]);
         APPS_URL = sourceUrl;
         if (sourceUrl === DEFAULT_APPS_URL && configuredUrl && configuredUrl !== DEFAULT_APPS_URL) {
           localStorage.removeItem('pea_api_url');
         }
         const reqCount = await attachRequestNumbers(RAW);
-        setSync('green', 'สด · ' + j.updated + ' · ' + RAW.length.toLocaleString() + ' รายการ' + (reqCount ? ' · คำร้องพร้อมค้นหา' : ''));
+        setSync('green', 'สด · ' + j.updated + ' · งานหลัก ' + RAW.length.toLocaleString() + ' · เลิกใช้ ' + AMI_ROWS.length.toLocaleString() + (reqCount ? ' · คำร้องพร้อมค้นหา' : ''));
         initAll();
         return;
       } catch (e) {
@@ -1531,6 +1858,7 @@ async function syncData() {
     throw lastErr || new Error('โหลดข้อมูลไม่ได้');
   } catch(err) {
     RAW = [];
+    AMI_ROWS = [];
     setSync('amber', 'โหลดข้อมูลสดไม่ได้ · ไม่มีข้อมูลเก่าฝังไว้ (' + err.message + ')');
     await attachRequestNumbers(RAW);
     initAll();
@@ -2167,12 +2495,13 @@ function saveUrl() {
   var testUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_=' + Date.now();
   fetch(testUrl, {cache: 'no-store'})
     .then(function(r){ return r.json(); })
-    .then(function(j){
+    .then(async function(j){
       if (!j.ok) throw new Error(j.error || 'ข้อมูลผิดพลาด');
       RAW = prepareRows(j.rows);
+      AMI_ROWS = prepareRows(await loadAmiRows());
       msg.style.color='var(--green)';
-      msg.textContent = '✓ เชื่อมต่อสำเร็จ! พบ ' + RAW.length.toLocaleString() + ' รายการ · อัปเดต ' + j.updated;
-      setSync('green', 'สด · ' + j.updated + ' · ' + RAW.length.toLocaleString() + ' รายการ');
+      msg.textContent = '✓ เชื่อมต่อสำเร็จ! งานหลัก ' + RAW.length.toLocaleString() + ' รายการ · เลิกใช้ ' + AMI_ROWS.length.toLocaleString() + ' · อัปเดต ' + j.updated;
+      setSync('green', 'สด · ' + j.updated + ' · งานหลัก ' + RAW.length.toLocaleString() + ' · เลิกใช้ ' + AMI_ROWS.length.toLocaleString());
       initAll();
     })
     .catch(function(e){
